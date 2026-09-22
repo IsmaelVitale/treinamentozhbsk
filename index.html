@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <!-- Viewport otimizada para telas grandes e proporção de TV -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Vídeos - Smart TV</title>
+  
+  <!-- Carregamento do Tailwind CSS para estilização utilitária e responsiva -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Estilos focados em interface de 10 pés (10-foot UI para TV) */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+    * {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      outline: none;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      overflow-x: hidden;
+    }
+
+    /* Destaque visual brilhante para o controle remoto/foco do teclado */
+    .tv-focusable {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center center;
+    }
+
+    .tv-focusable:focus,
+    .tv-focusable.active-focus {
+      transform: scale(1.06);
+      box-shadow: 0 0 0 4px #38bdf8, 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(56, 189, 248, 0.4);
+      z-index: 30;
+    }
+
+    /* Ocultar barra de rolagem mas manter navegação suave */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    html {
+      scrollbar-width: none;
+    }
+
+    /* Animação suave para troca de tela cheia e transições */
+    .fade-overlay {
+      transition: opacity 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-6 lg:p-10">
+
+  <!-- Cabeçalho superior visível à distância com relógio e dicas de controle -->
+  <header class="flex items-center justify-between pb-6 border-b border-slate-800">
+    <div class="flex items-center space-x-4">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <!-- Ícone de TV/Reprodução SVG -->
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide text-white">Smart TV Player</h1>
+        <p class="text-sm md:text-base text-slate-400">Vídeos da pasta raiz local</p>
+      </div>
+    </div>
+
+    <!-- Indicador de Atalhos de Controle Remoto e Hora Atual -->
+    <div class="flex items-center space-x-6">
+      <div class="hidden sm:flex items-center space-x-2 text-xs md:text-sm bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">
+        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400">Setas</span> Navegar
+        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400 ml-2">OK / Enter</span> Selecionar
+        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400 ml-2">ESC</span> Sair Tela Cheia
+      </div>
+      <div id="clockDisplay" class="text-xl md:text-2xl font-bold tracking-wider text-sky-400">00:00</div>
+    </div>
+  </header>
+
+  <!-- Reprodutor de Vídeo Principal em Destaque -->
+  <main class="my-8 flex flex-col items-center justify-center w-full">
+    <div id="playerWrapper" class="relative w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-800 focus:outline-none">
+      
+      <!-- Elemento de Vídeo HTML5 -->
+      <video id="tvVideo" class="w-full h-full object-contain" preload="metadata" playsinline>
+        <source src="video1.mp4" type="video/mp4">
+        Seu navegador ou TV não suporta a tag de vídeo HTML5.
+      </video>
+
+      <!-- Badge de Título sobreposto ao vídeo -->
+      <div id="videoTitleOverlay" class="absolute top-6 left-6 bg-slate-900/80 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-700/50 flex items-center space-x-3 pointer-events-none transition-opacity duration-300">
+        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+        <span id="currentVideoTitle" class="text-lg md:text-xl font-bold text-white tracking-wide">video1.mp4</span>
+      </div>
+
+      <!-- Barra de Controle Customizada para TV (Grande e visível) -->
+      <div id="videoControlsBar" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 flex flex-col space-y-3 transition-opacity duration-300">
+        <!-- Barra de Progresso visual -->
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden cursor-pointer">
+          <div id="videoProgressBar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-full w-0 transition-all duration-100"></div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div class="flex items-center space-x-4">
+            <!-- Botão Play/Pause focável -->
+            <button id="btnPlayPause" tabindex="0" class="tv-focusable px-5 py-2.5 bg-sky-600 text-white rounded-xl font-bold flex items-center space-x-2 text-base shadow hover:bg-sky-500">
+              <span id="playIcon">▶ Reproduzir</span>
+            </button>
+            
+            <!-- Botão Próximo Vídeo -->
+            <button id="btnNext" tabindex="0" class="tv-focusable px-4 py-2.5 bg-slate-800 text-slate-200 rounded-xl font-semibold hover:bg-slate-700 text-base">
+              ⏭ Próximo
+            </button>
+
+            <!-- Botão Loop / Repetição -->
+            <button id="btnLoop" tabindex="0" class="tv-focusable px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 text-base">
+              🔁 Loop: <span id="loopStatusText" class="text-sky-400 font-bold ml-1">Desligado</span>
+            </button>
+          </div>
+
+          <!-- Tempo e Botão Tela Cheia -->
+          <div class="flex items-center space-x-4">
+            <span id="videoTimeDisplay" class="text-sm md:text-base font-semibold text-slate-300">00:00 / 00:00</span>
+            <button id="btnFullscreen" tabindex="0" class="tv-focusable px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 text-base">
+              ⛶ Tela Cheia
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Seção da Lista/Grade de Vídeos com Cards Grandes para TV -->
+  <section class="mt-4 flex-1">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl md:text-2xl font-bold tracking-wide text-slate-200">Biblioteca de Vídeos Locais</h2>
+      <span class="text-sm font-semibold text-slate-400">Pressione as setas para escolher</span>
+    </div>
+
+    <!-- Grade responsiva de cards navegáveis por teclado/controle -->
+    <div id="playlistGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-12">
+      <!-- Os itens da lista serão gerados ou complementados dinamicamente pelo JavaScript -->
+    </div>
+  </section>
+
+  <!-- Notificação Flutuante / Toast (indica ações na tela da TV) -->
+  <div id="tvNotification" class="fixed top-8 right-8 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-sky-600 text-white font-bold px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
+    <span id="notificationIcon">🔔</span>
+    <span id="notificationMessage">Mensagem</span>
+  </div>
+
+  <script>
+    /**
+     * Lista de vídeos presentes na mesma pasta raiz do index.html.
+     * Adicione ou altere o nome dos arquivos conforme os vídeos na sua pasta!
+     */
+    const videoFiles = [
+      { id: 1, name: 'video1.mp4', title: 'Vídeo 01 - Apresentação', thumbText: '01' },
+      { id: 2, name: 'video2.mp4', title: 'Vídeo 02 - Destaque TV', thumbText: '02' },
+      { id: 3, name: 'video3.mp4', title: 'Vídeo 03 - Demonstração', thumbText: '03' },
+      { id: 4, name: 'video4.mp4', title: 'Vídeo 04 - Conteúdo Especial', thumbText: '04' }
+    ];
+
+    let currentVideoIndex = 0;
+    let isLoopEnabled = false;
+    let overlayTimeout = null;
+
+    // Referências aos elementos do DOM
+    const videoElement = document.getElementById('tvVideo');
+    const playerWrapper = document.getElementById('playerWrapper');
+    const currentVideoTitle = document.getElementById('currentVideoTitle');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playIcon = document.getElementById('playIcon');
+    const btnNext = document.getElementById('btnNext');
+    const btnLoop = document.getElementById('btnLoop');
+    const loopStatusText = document.getElementById('loopStatusText');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const videoProgressBar = document.getElementById('videoProgressBar');
+    const videoTimeDisplay = document.getElementById('videoTimeDisplay');
+    const playlistGrid = document.getElementById('playlistGrid');
+    const clockDisplay = document.getElementById('clockDisplay');
+    const videoTitleOverlay = document.getElementById('videoTitleOverlay');
+    const videoControlsBar = document.getElementById('videoControlsBar');
+    const tvNotification = document.getElementById('tvNotification');
+    const notificationMessage = document.getElementById('notificationMessage');
+
+    // Renderiza os cartões de vídeos com foco facilitado para controle de TV
+    function renderPlaylist() {
+      playlistGrid.innerHTML = '';
+      
+      videoFiles.forEach((item, index) => {
+        const isCurrent = index === currentVideoIndex;
+        const card = document.createElement('button');
+        card.className = `tv-focusable relative flex flex-col p-4 rounded-2xl text-left bg-slate-900 border transition-all duration-200 cursor-pointer ${
+          isCurrent ? 'border-sky-500 ring-2 ring-sky-500/50' : 'border-slate-800 hover:border-slate-600'
+        }`;
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('data-index', index);
+
+        card.innerHTML = `
+          <!-- Miniatura representativa gerada com contraste para TV -->
+          <div class="relative w-full aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden flex items-center justify-center border border-slate-700/50">
+            <span class="text-4xl font-extrabold text-slate-600">${item.thumbText}</span>
+            <div class="absolute inset-0 bg-sky-500/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <span class="text-3xl text-white">▶</span>
+            </div>
+            ${isCurrent ? '<span class="absolute top-2 right-2 bg-sky-500 text-xs font-bold text-white px-2 py-1 rounded-md uppercase">Em Reprodução</span>' : ''}
+          </div>
+          <div class="mt-3">
+            <h3 class="text-base font-bold text-white truncate">${item.title}</h3>
+            <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">${item.name}</p>
+          </div>
+        `;
+
+        // Reproduz o vídeo ao clicar ou dar Enter no card
+        card.addEventListener('click', () => {
+          loadAndPlayVideo(index);
+        });
+
+        playlistGrid.appendChild(card);
+      });
+    }
+
+    // Carrega e inicia a reprodução do vídeo pelo índice
+    function loadAndPlayVideo(index) {
+      if (index < 0 || index >= videoFiles.length) return;
+      currentVideoIndex = index;
+      const targetVideo = videoFiles[currentVideoIndex];
+      
+      videoElement.src = targetVideo.name;
+      currentVideoTitle.textContent = `${targetVideo.name} (${targetVideo.title})`;
+      
+      renderPlaylist();
+      showNotification(`Reproduzindo: ${targetVideo.title}`);
+
+      videoElement.play()
+        .then(() => {
+          playIcon.textContent = '⏸ Pausar';
+        })
+        .catch((err) => {
+          console.warn('Autoplay bloqueado pelo navegador até interação:', err);
+          playIcon.textContent = '▶ Reproduzir';
+          showNotification('Pressione Play para iniciar');
+        });
+    }
+
+    // Alternar Play / Pause
+    function togglePlayPause() {
+      if (videoElement.paused || videoElement.ended) {
+        videoElement.play();
+        playIcon.textContent = '⏸ Pausar';
+        showNotification('Reproduzindo');
+      } else {
+        videoElement.pause();
+        playIcon.textContent = '▶ Reproduzir';
+        showNotification('Pausado');
+      }
+    }
+
+    // Avançar para o próximo vídeo
+    function playNextVideo() {
+      let nextIndex = currentVideoIndex + 1;
+      if (nextIndex >= videoFiles.length) {
+        if (isLoopEnabled) {
+          nextIndex = 0; // Volta ao primeiro se o loop geral estiver ligado
+        } else {
+          showNotification('Fim da lista de reprodução');
+          return;
+        }
+      }
+      loadAndPlayVideo(nextIndex);
+    }
+
+    // Vídeo anterior
+    function playPrevVideo() {
+      let prevIndex = currentVideoIndex - 1;
+      if (prevIndex < 0) {
+        prevIndex = videoFiles.length - 1;
+      }
+      loadAndPlayVideo(prevIndex);
+    }
+
+    // Alternar modo de Repetição / Loop
+    function toggleLoop() {
+      isLoopEnabled = !isLoopEnabled;
+      videoElement.loop = isLoopEnabled;
+      loopStatusText.textContent = isLoopEnabled ? 'Ligado' : 'Desligado';
+      loopStatusText.className = isLoopEnabled ? 'text-emerald-400 font-bold ml-1' : 'text-sky-400 font-bold ml-1';
+      showNotification(isLoopEnabled ? 'Loop Ativado' : 'Loop Desativado');
+    }
+
+    // Alternar Tela Cheia (Fullscreen API adaptada para navegadores de TV)
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        if (playerWrapper.requestFullscreen) {
+          playerWrapper.requestFullscreen();
+        } else if (playerWrapper.webkitRequestFullscreen) {
+          playerWrapper.webkitRequestFullscreen();
+        }
+        btnFullscreen.textContent = '🗗 Sair Tela Cheia';
+        showNotification('Modo Tela Cheia');
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+        btnFullscreen.textContent = '⛶ Tela Cheia';
+      }
+    }
+
+    // Formatar segundos em mm:ss
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return '00:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Atualização de tempo e barra de progresso
+    videoElement.addEventListener('timeupdate', () => {
+      const current = videoElement.currentTime;
+      const duration = videoElement.duration || 0;
+      if (duration > 0) {
+        const pct = (current / duration) * 100;
+        videoProgressBar.style.width = `${pct}%`;
+      }
+      videoTimeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    });
+
+    // Evento de fim de vídeo (avança automaticamente para o próximo se não for loop único)
+    videoElement.addEventListener('ended', () => {
+      if (!isLoopEnabled) {
+        playNextVideo();
+      }
+    });
+
+    // Notificação visual rápida na tela da TV
+    let notifTimer = null;
+    function showNotification(text) {
+      notificationMessage.textContent = text;
+      tvNotification.classList.remove('translate-y-[-150%]');
+      clearTimeout(notifTimer);
+      notifTimer = setTimeout(() => {
+        tvNotification.classList.add('translate-y-[-150%]');
+      }, 2500);
+    }
+
+    // Atualização de relógio no cabeçalho
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      clockDisplay.textContent = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /**
+     * Gerenciador de navegação por controle remoto / teclado:
+     * D-PAD (ArrowUp, ArrowDown, ArrowLeft, ArrowRight), Enter (OK) e ESC (Voltar)
+     */
+    document.addEventListener('keydown', (e) => {
+      const focusables = Array.from(document.querySelectorAll('.tv-focusable, video'));
+      const activeElement = document.activeElement;
+      const currentIndex = focusables.indexOf(activeElement);
+
+      switch (e.key) {
+        case 'ArrowRight':
+          // Se estiver focado no vídeo, pode avançar 10s
+          if (activeElement === videoElement) {
+            videoElement.currentTime += 10;
+            showNotification('+10s ⏩');
+            e.preventDefault();
+          } else {
+            // Navega para o próximo item focável
+            const nextElem = focusables[currentIndex + 1] || focusables[0];
+            if (nextElem) nextElem.focus();
+            e.preventDefault();
+          }
+          break;
+
+        case 'ArrowLeft':
+          if (activeElement === videoElement) {
+            videoElement.currentTime -= 10;
+            showNotification('-10s ⏪');
+            e.preventDefault();
+          } else {
+            // Navega para o item anterior
+            const prevElem = focusables[currentIndex - 1] || focusables[focusables.length - 1];
+            if (prevElem) prevElem.focus();
+            e.preventDefault();
+          }
+          break;
+
+        case 'ArrowDown':
+          // Se estiver nos botões de controle, desce para os cards da playlist
+          if (currentIndex < 4) {
+            const firstCard = playlistGrid.querySelector('.tv-focusable');
+            if (firstCard) firstCard.focus();
+            e.preventDefault();
+          }
+          break;
+
+        case 'ArrowUp':
+          // Sobe de volta para os botões do player
+          if (currentIndex >= 4) {
+            btnPlayPause.focus();
+            e.preventDefault();
+          }
+          break;
+
+        case ' ': // Barra de espaço
+          togglePlayPause();
+          e.preventDefault();
+          break;
+
+        case 'Escape':
+        case 'Back': // Tecla Back de alguns navegadores de TV
+          if (document.fullscreenElement) {
+            toggleFullscreen();
+          }
+          break;
+      }
+    });
+
+    // Eventos dos botões do player
+    btnPlayPause.addEventListener('click', togglePlayPause);
+    btnNext.addEventListener('click', playNextVideo);
+    btnLoop.addEventListener('click', toggleLoop);
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Inicialização da interface
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPlaylist();
+      // Foco inicial padrão no botão de reproduzir para facilitar o controle imediato
+      btnPlayPause.focus();
+    });
+  </script>
+</body>
+</html>
