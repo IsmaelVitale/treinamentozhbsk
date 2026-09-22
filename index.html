@@ -2,44 +2,29 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport otimizada para telas grandes e proporção de TV -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Central de Vídeos - Smart TV</title>
+  <title>Smart TV - Drive Player</title>
   
-  <!-- Carregamento do Tailwind CSS para estilização utilitária e responsiva -->
+  <!-- Carregando Tailwind via CDN para um design rápido, moderno e 100% em um só arquivo -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Estilos focados em interface de 10 pés (10-foot UI para TV) */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     * {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      outline: none;
+      user-select: none; /* Previne seleção acidental de texto com o controle remoto */
+      outline: none; /* Remove a borda padrão de foco do navegador */
     }
 
     body {
-      background-color: #0b0f19;
-      color: #f3f4f6;
+      background-color: #0b1120;
+      color: #f8fafc;
       overflow-x: hidden;
+      overflow-y: hidden; /* Na TV é melhor não ter barra de rolagem geral, navegamos por foco */
     }
 
-    /* Destaque visual brilhante para o controle remoto/foco do teclado */
-    .tv-focusable {
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      transform-origin: center center;
-    }
-
-    .tv-focusable:focus,
-    .tv-focusable.active-focus {
-      transform: scale(1.06);
-      box-shadow: 0 0 0 4px #38bdf8, 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(56, 189, 248, 0.4);
-      z-index: 30;
-    }
-
-    /* Ocultar barra de rolagem mas manter navegação suave */
+    /* Ocultar barra de rolagem visualmente, mas permitir scroll por código/foco se necessário */
     ::-webkit-scrollbar {
       display: none;
     }
@@ -47,399 +32,296 @@
       scrollbar-width: none;
     }
 
-    /* Animação suave para troca de tela cheia e transições */
-    .fade-overlay {
-      transition: opacity 0.3s ease-in-out;
+    .tv-focusable {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center center;
+      border: 3px solid transparent;
+    }
+
+    .tv-focusable:focus,
+    .tv-focusable.active-focus {
+      transform: scale(1.05);
+      border-color: #38bdf8; /* Azul claro para alto contraste na TV */
+      background-color: #1e293b;
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.3), 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+      z-index: 20;
+    }
+
+    /* Efeito sutil de pulsão para o card ativo (em reprodução) */
+    .playing-pulse {
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
   </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-6 lg:p-10">
+<body class="h-screen w-screen flex flex-col p-6 sm:p-10 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
 
-  <!-- Cabeçalho superior visível à distância com relógio e dicas de controle -->
-  <header class="flex items-center justify-between pb-6 border-b border-slate-800">
-    <div class="flex items-center space-x-4">
-      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <!-- Ícone de TV/Reprodução SVG -->
-        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <header class="flex items-center justify-between pb-6 flex-shrink-0 border-b border-slate-800/50">
+    <div class="flex items-center space-x-5">
+      <!-- Ícone/Logo -->
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
         </svg>
       </div>
       <div>
-        <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide text-white">Smart TV Player</h1>
-        <p class="text-sm md:text-base text-slate-400">Vídeos da pasta raiz local</p>
+        <h1 class="text-3xl font-extrabold tracking-tight text-white">DriveTV Hub</h1>
+        <p class="text-slate-400 font-medium tracking-wide">Streaming Direto da Nuvem</p>
       </div>
     </div>
 
-    <!-- Indicador de Atalhos de Controle Remoto e Hora Atual -->
-    <div class="flex items-center space-x-6">
-      <div class="hidden sm:flex items-center space-x-2 text-xs md:text-sm bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">
-        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400">Setas</span> Navegar
-        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400 ml-2">OK / Enter</span> Selecionar
-        <span class="px-2 py-0.5 bg-slate-800 rounded font-semibold text-sky-400 ml-2">ESC</span> Sair Tela Cheia
+    <!-- Indicador de botões do controle -->
+    <div class="hidden md:flex items-center space-x-4 bg-slate-900/60 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-800">
+      <div class="flex items-center space-x-2">
+        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">Setas</span>
+        <span class="text-slate-300 text-sm font-semibold">Navegar</span>
       </div>
-      <div id="clockDisplay" class="text-xl md:text-2xl font-bold tracking-wider text-sky-400">00:00</div>
+      <div class="w-px h-6 bg-slate-700"></div>
+      <div class="flex items-center space-x-2">
+        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">OK</span>
+        <span class="text-slate-300 text-sm font-semibold">Reproduzir</span>
+      </div>
+      <div class="w-px h-6 bg-slate-700"></div>
+      <div class="flex items-center space-x-2">
+        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">Espaço</span>
+        <span class="text-slate-300 text-sm font-semibold">Pausar</span>
+      </div>
     </div>
   </header>
 
-  <!-- Reprodutor de Vídeo Principal em Destaque -->
-  <main class="my-8 flex flex-col items-center justify-center w-full">
-    <div id="playerWrapper" class="relative w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-800 focus:outline-none">
+  <main class="flex-1 flex flex-col xl:flex-row gap-8 mt-8 overflow-hidden h-full">
+    
+    <!-- Player Principal em Destaque -->
+    <section class="flex-shrink-0 w-full xl:w-2/3 max-h-[60vh] xl:max-h-none xl:h-full relative flex items-center justify-center">
+      <div id="playerWrapper" class="w-full h-full bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative group">
+        
+        <!-- Elemento de Vídeo HTML5 -->
+        <video id="tvPlayer" class="w-full h-full object-contain" controls autoplay playsinline preload="auto">
+          <!-- A URL de streaming será injetada via JavaScript -->
+        </video>
+        
+        <!-- Overlay de Carregamento (Feedback visual importante para streams pesados) -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center transition-opacity duration-300 z-10 hidden">
+          <svg class="animate-spin -ml-1 mr-3 h-12 w-12 text-sky-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-sky-400 font-bold text-xl tracking-wider">Conectando ao Google Drive...</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex-1 flex flex-col bg-slate-900/40 rounded-3xl p-6 border border-slate-800/50 min-h-0">
+      <h2 class="text-2xl font-bold text-slate-200 mb-6 flex items-center space-x-3">
+        <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <span>Sua Biblioteca</span>
+      </h2>
       
-      <!-- Elemento de Vídeo HTML5 -->
-      <video id="tvVideo" class="w-full h-full object-contain" preload="metadata" playsinline>
-        <source src="video1.mp4" type="video/mp4">
-        Seu navegador ou TV não suporta a tag de vídeo HTML5.
-      </video>
-
-      <!-- Badge de Título sobreposto ao vídeo -->
-      <div id="videoTitleOverlay" class="absolute top-6 left-6 bg-slate-900/80 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-700/50 flex items-center space-x-3 pointer-events-none transition-opacity duration-300">
-        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-        <span id="currentVideoTitle" class="text-lg md:text-xl font-bold text-white tracking-wide">video1.mp4</span>
+      <!-- Container com rolagem para as capas (focado para as setas na TV) -->
+      <div id="playlistGrid" class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pb-10">
+        <!-- Os cards serão gerados aqui dinamicamente -->
       </div>
+    </section>
 
-      <!-- Barra de Controle Customizada para TV (Grande e visível) -->
-      <div id="videoControlsBar" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 flex flex-col space-y-3 transition-opacity duration-300">
-        <!-- Barra de Progresso visual -->
-        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden cursor-pointer">
-          <div id="videoProgressBar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-full w-0 transition-all duration-100"></div>
-        </div>
-
-        <div class="flex items-center justify-between pt-2">
-          <div class="flex items-center space-x-4">
-            <!-- Botão Play/Pause focável -->
-            <button id="btnPlayPause" tabindex="0" class="tv-focusable px-5 py-2.5 bg-sky-600 text-white rounded-xl font-bold flex items-center space-x-2 text-base shadow hover:bg-sky-500">
-              <span id="playIcon">▶ Reproduzir</span>
-            </button>
-            
-            <!-- Botão Próximo Vídeo -->
-            <button id="btnNext" tabindex="0" class="tv-focusable px-4 py-2.5 bg-slate-800 text-slate-200 rounded-xl font-semibold hover:bg-slate-700 text-base">
-              ⏭ Próximo
-            </button>
-
-            <!-- Botão Loop / Repetição -->
-            <button id="btnLoop" tabindex="0" class="tv-focusable px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 text-base">
-              🔁 Loop: <span id="loopStatusText" class="text-sky-400 font-bold ml-1">Desligado</span>
-            </button>
-          </div>
-
-          <!-- Tempo e Botão Tela Cheia -->
-          <div class="flex items-center space-x-4">
-            <span id="videoTimeDisplay" class="text-sm md:text-base font-semibold text-slate-300">00:00 / 00:00</span>
-            <button id="btnFullscreen" tabindex="0" class="tv-focusable px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 text-base">
-              ⛶ Tela Cheia
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </main>
 
-  <!-- Seção da Lista/Grade de Vídeos com Cards Grandes para TV -->
-  <section class="mt-4 flex-1">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl md:text-2xl font-bold tracking-wide text-slate-200">Biblioteca de Vídeos Locais</h2>
-      <span class="text-sm font-semibold text-slate-400">Pressione as setas para escolher</span>
-    </div>
-
-    <!-- Grade responsiva de cards navegáveis por teclado/controle -->
-    <div id="playlistGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-12">
-      <!-- Os itens da lista serão gerados ou complementados dinamicamente pelo JavaScript -->
-    </div>
-  </section>
-
-  <!-- Notificação Flutuante / Toast (indica ações na tela da TV) -->
-  <div id="tvNotification" class="fixed top-8 right-8 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-sky-600 text-white font-bold px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
-    <span id="notificationIcon">🔔</span>
-    <span id="notificationMessage">Mensagem</span>
-  </div>
-
   <script>
-    /**
-     * Lista de vídeos presentes na mesma pasta raiz do index.html.
-     * Adicione ou altere o nome dos arquivos conforme os vídeos na sua pasta!
-     */
-    const videoFiles = [
-      { id: 1, name: 'video1.mp4', title: 'Vídeo 01 - Apresentação', thumbText: '01' },
-      { id: 2, name: 'video2.mp4', title: 'Vídeo 02 - Destaque TV', thumbText: '02' },
-      { id: 3, name: 'video3.mp4', title: 'Vídeo 03 - Demonstração', thumbText: '03' },
-      { id: 4, name: 'video4.mp4', title: 'Vídeo 04 - Conteúdo Especial', thumbText: '04' }
+    
+    // ATENÇÃO: Seu vídeo original configurado com a ID correta do Drive.
+    // O endpoint `lh3.googleusercontent.com` faz o bypass do HTML padrão do Drive 
+    // e retorna diretamente o stream de dados do vídeo para a tag <video>.
+    const driveVideos = [
+      {
+        title: "V1_ESP_1_languages",
+        id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW",
+        thumbnailText: "01", // Um número ou letra para ficar bonito caso não tenhamos uma capa de imagem real
+        desc: "Vídeo sincronizado do Drive"
+      }
+      // Para adicionar mais:
+      // ,{ title: "Vídeo 2", id: "ID_DO_DRIVE_AQUI", thumbnailText: "02", desc: "..." }
     ];
 
-    let currentVideoIndex = 0;
-    let isLoopEnabled = false;
-    let overlayTimeout = null;
-
-    // Referências aos elementos do DOM
-    const videoElement = document.getElementById('tvVideo');
-    const playerWrapper = document.getElementById('playerWrapper');
-    const currentVideoTitle = document.getElementById('currentVideoTitle');
-    const btnPlayPause = document.getElementById('btnPlayPause');
-    const playIcon = document.getElementById('playIcon');
-    const btnNext = document.getElementById('btnNext');
-    const btnLoop = document.getElementById('btnLoop');
-    const loopStatusText = document.getElementById('loopStatusText');
-    const btnFullscreen = document.getElementById('btnFullscreen');
-    const videoProgressBar = document.getElementById('videoProgressBar');
-    const videoTimeDisplay = document.getElementById('videoTimeDisplay');
+    let currentIndex = 0;
+    
+    const player = document.getElementById('tvPlayer');
+    const loadingOverlay = document.getElementById('loadingOverlay');
     const playlistGrid = document.getElementById('playlistGrid');
-    const clockDisplay = document.getElementById('clockDisplay');
-    const videoTitleOverlay = document.getElementById('videoTitleOverlay');
-    const videoControlsBar = document.getElementById('videoControlsBar');
-    const tvNotification = document.getElementById('tvNotification');
-    const notificationMessage = document.getElementById('notificationMessage');
 
-    // Renderiza os cartões de vídeos com foco facilitado para controle de TV
+    // Função vital para converter ID do drive em link direto de streaming
+    function getStreamUrl(fileId) {
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+
     function renderPlaylist() {
       playlistGrid.innerHTML = '';
       
-      videoFiles.forEach((item, index) => {
-        const isCurrent = index === currentVideoIndex;
+      driveVideos.forEach((vid, index) => {
+        // Criamos os cards com botões focáveis via tabindex="0" (Crucial para TV)
         const card = document.createElement('button');
-        card.className = `tv-focusable relative flex flex-col p-4 rounded-2xl text-left bg-slate-900 border transition-all duration-200 cursor-pointer ${
-          isCurrent ? 'border-sky-500 ring-2 ring-sky-500/50' : 'border-slate-800 hover:border-slate-600'
-        }`;
+        card.className = 'tv-focusable flex flex-col text-left bg-slate-800/80 rounded-2xl p-4 gap-4 w-full cursor-pointer overflow-hidden';
         card.setAttribute('tabindex', '0');
         card.setAttribute('data-index', index);
 
+        // Estrutura interna do Card: Capa fictícia e Textos
         card.innerHTML = `
-          <!-- Miniatura representativa gerada com contraste para TV -->
-          <div class="relative w-full aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden flex items-center justify-center border border-slate-700/50">
-            <span class="text-4xl font-extrabold text-slate-600">${item.thumbText}</span>
-            <div class="absolute inset-0 bg-sky-500/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-              <span class="text-3xl text-white">▶</span>
+          <div class="relative w-full aspect-video bg-slate-900 rounded-xl flex items-center justify-center border border-slate-700/50 shadow-inner overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-tr from-sky-900/40 to-transparent"></div>
+            <span class="text-4xl font-black text-slate-700">${vid.thumbnailText}</span>
+            <div class="status-badge absolute top-3 right-3 bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded-md hidden">
+              EM REPRODUÇÃO
             </div>
-            ${isCurrent ? '<span class="absolute top-2 right-2 bg-sky-500 text-xs font-bold text-white px-2 py-1 rounded-md uppercase">Em Reprodução</span>' : ''}
+            <div class="play-icon-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 transition-opacity">
+               <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+            </div>
           </div>
-          <div class="mt-3">
-            <h3 class="text-base font-bold text-white truncate">${item.title}</h3>
-            <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">${item.name}</p>
+          <div class="flex flex-col">
+            <h3 class="text-lg font-bold text-slate-100 truncate w-full">${vid.title}</h3>
+            <p class="text-sm text-slate-400 mt-1 truncate w-full">${vid.desc}</p>
           </div>
         `;
 
-        // Reproduz o vídeo ao clicar ou dar Enter no card
-        card.addEventListener('click', () => {
-          loadAndPlayVideo(index);
-        });
-
+        // Lidar com clique do mouse ou toque
+        card.addEventListener('click', () => loadAndPlay(index));
         playlistGrid.appendChild(card);
+      });
+      
+      updateHighlightUI();
+    }
+
+    function updateHighlightUI() {
+      const cards = playlistGrid.querySelectorAll('button');
+      
+      cards.forEach((card, idx) => {
+        const badge = card.querySelector('.status-badge');
+        
+        if (idx === currentIndex) {
+          card.classList.add('border-sky-500', 'bg-slate-800');
+          card.classList.remove('border-transparent', 'bg-slate-800/80');
+          badge.classList.remove('hidden');
+        } else {
+          card.classList.remove('border-sky-500', 'bg-slate-800');
+          card.classList.add('border-transparent', 'bg-slate-800/80');
+          badge.classList.add('hidden');
+        }
       });
     }
 
-    // Carrega e inicia a reprodução do vídeo pelo índice
-    function loadAndPlayVideo(index) {
-      if (index < 0 || index >= videoFiles.length) return;
-      currentVideoIndex = index;
-      const targetVideo = videoFiles[currentVideoIndex];
+    function loadAndPlay(index) {
+      if (index < 0 || index >= driveVideos.length) return;
       
-      videoElement.src = targetVideo.name;
-      currentVideoTitle.textContent = `${targetVideo.name} (${targetVideo.title})`;
+      currentIndex = index;
+      const targetVideo = driveVideos[currentIndex];
       
-      renderPlaylist();
-      showNotification(`Reproduzindo: ${targetVideo.title}`);
+      // Mostrar overlay de loading enquanto o navegador resolve a conexão com o Google Drive
+      loadingOverlay.classList.remove('hidden');
+      
+      // Atualiza a fonte do player nativo
+      player.src = getStreamUrl(targetVideo.id);
+      
+      // Atualiza a visualização
+      updateHighlightUI();
 
-      videoElement.play()
-        .then(() => {
-          playIcon.textContent = '⏸ Pausar';
-        })
-        .catch((err) => {
-          console.warn('Autoplay bloqueado pelo navegador até interação:', err);
-          playIcon.textContent = '▶ Reproduzir';
-          showNotification('Pressione Play para iniciar');
-        });
+      // Tenta reproduzir. Se falhar, é erro de autoplay sem interação prévia.
+      player.play().catch(err => {
+        console.warn('Interação do usuário necessária para iniciar reprodução:', err);
+        loadingOverlay.classList.add('hidden'); // Oculta loading se não deu play automático
+      });
     }
 
-    // Alternar Play / Pause
-    function togglePlayPause() {
-      if (videoElement.paused || videoElement.ended) {
-        videoElement.play();
-        playIcon.textContent = '⏸ Pausar';
-        showNotification('Reproduzindo');
-      } else {
-        videoElement.pause();
-        playIcon.textContent = '▶ Reproduzir';
-        showNotification('Pausado');
-      }
-    }
-
-    // Avançar para o próximo vídeo
-    function playNextVideo() {
-      let nextIndex = currentVideoIndex + 1;
-      if (nextIndex >= videoFiles.length) {
-        if (isLoopEnabled) {
-          nextIndex = 0; // Volta ao primeiro se o loop geral estiver ligado
-        } else {
-          showNotification('Fim da lista de reprodução');
-          return;
-        }
-      }
-      loadAndPlayVideo(nextIndex);
-    }
-
-    // Vídeo anterior
-    function playPrevVideo() {
-      let prevIndex = currentVideoIndex - 1;
-      if (prevIndex < 0) {
-        prevIndex = videoFiles.length - 1;
-      }
-      loadAndPlayVideo(prevIndex);
-    }
-
-    // Alternar modo de Repetição / Loop
-    function toggleLoop() {
-      isLoopEnabled = !isLoopEnabled;
-      videoElement.loop = isLoopEnabled;
-      loopStatusText.textContent = isLoopEnabled ? 'Ligado' : 'Desligado';
-      loopStatusText.className = isLoopEnabled ? 'text-emerald-400 font-bold ml-1' : 'text-sky-400 font-bold ml-1';
-      showNotification(isLoopEnabled ? 'Loop Ativado' : 'Loop Desativado');
-    }
-
-    // Alternar Tela Cheia (Fullscreen API adaptada para navegadores de TV)
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        if (playerWrapper.requestFullscreen) {
-          playerWrapper.requestFullscreen();
-        } else if (playerWrapper.webkitRequestFullscreen) {
-          playerWrapper.webkitRequestFullscreen();
-        }
-        btnFullscreen.textContent = '🗗 Sair Tela Cheia';
-        showNotification('Modo Tela Cheia');
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
-        btnFullscreen.textContent = '⛶ Tela Cheia';
-      }
-    }
-
-    // Formatar segundos em mm:ss
-    function formatTime(seconds) {
-      if (isNaN(seconds)) return '00:00';
-      const m = Math.floor(seconds / 60);
-      const s = Math.floor(seconds % 60);
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-
-    // Atualização de tempo e barra de progresso
-    videoElement.addEventListener('timeupdate', () => {
-      const current = videoElement.currentTime;
-      const duration = videoElement.duration || 0;
-      if (duration > 0) {
-        const pct = (current / duration) * 100;
-        videoProgressBar.style.width = `${pct}%`;
-      }
-      videoTimeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    // Eventos do Elemento de Vídeo
+    player.addEventListener('playing', () => {
+      // Quando começa a rodar de fato, escondemos o aviso de carregamento
+      loadingOverlay.classList.add('hidden');
     });
 
-    // Evento de fim de vídeo (avança automaticamente para o próximo se não for loop único)
-    videoElement.addEventListener('ended', () => {
-      if (!isLoopEnabled) {
-        playNextVideo();
-      }
+    player.addEventListener('waiting', () => {
+      // Se houver buffer lento, mostramos loading novamente
+      loadingOverlay.classList.remove('hidden');
     });
 
-    // Notificação visual rápida na tela da TV
-    let notifTimer = null;
-    function showNotification(text) {
-      notificationMessage.textContent = text;
-      tvNotification.classList.remove('translate-y-[-150%]');
-      clearTimeout(notifTimer);
-      notifTimer = setTimeout(() => {
-        tvNotification.classList.add('translate-y-[-150%]');
-      }, 2500);
-    }
+    player.addEventListener('ended', () => {
+      // Pula para o próximo vídeo quando terminar
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= driveVideos.length) {
+        nextIndex = 0; // Loop na playlist se chegou no fim
+      }
+      loadAndPlay(nextIndex);
+    });
 
-    // Atualização de relógio no cabeçalho
-    function updateClock() {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      clockDisplay.textContent = `${h}:${m}`;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    /**
-     * Gerenciador de navegação por controle remoto / teclado:
-     * D-PAD (ArrowUp, ArrowDown, ArrowLeft, ArrowRight), Enter (OK) e ESC (Voltar)
-     */
+    // Essa é a mágica para a Smart TV. Mapeia as setas direcionais para trocar o foco (focus())
+    // entre o player e a lista de vídeos, imitando nativamente o controle de TV.
+    
     document.addEventListener('keydown', (e) => {
+      // Coletamos todos os elementos que podem receber foco
       const focusables = Array.from(document.querySelectorAll('.tv-focusable, video'));
       const activeElement = document.activeElement;
-      const currentIndex = focusables.indexOf(activeElement);
+      
+      let currentIndexFocus = focusables.indexOf(activeElement);
+
+      // Tratamento especial para atalhos globais de mídia
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault(); // Impede o scroll de tela indesejado
+        if (player.paused) player.play();
+        else player.pause();
+        return;
+      }
 
       switch (e.key) {
-        case 'ArrowRight':
-          // Se estiver focado no vídeo, pode avançar 10s
-          if (activeElement === videoElement) {
-            videoElement.currentTime += 10;
-            showNotification('+10s ⏩');
-            e.preventDefault();
-          } else {
-            // Navega para o próximo item focável
-            const nextElem = focusables[currentIndex + 1] || focusables[0];
-            if (nextElem) nextElem.focus();
-            e.preventDefault();
-          }
-          break;
-
-        case 'ArrowLeft':
-          if (activeElement === videoElement) {
-            videoElement.currentTime -= 10;
-            showNotification('-10s ⏪');
-            e.preventDefault();
-          } else {
-            // Navega para o item anterior
-            const prevElem = focusables[currentIndex - 1] || focusables[focusables.length - 1];
-            if (prevElem) prevElem.focus();
-            e.preventDefault();
-          }
-          break;
-
         case 'ArrowDown':
-          // Se estiver nos botões de controle, desce para os cards da playlist
-          if (currentIndex < 4) {
-            const firstCard = playlistGrid.querySelector('.tv-focusable');
-            if (firstCard) firstCard.focus();
-            e.preventDefault();
-          }
-          break;
-
-        case 'ArrowUp':
-          // Sobe de volta para os botões do player
-          if (currentIndex >= 4) {
-            btnPlayPause.focus();
-            e.preventDefault();
-          }
-          break;
-
-        case ' ': // Barra de espaço
-          togglePlayPause();
+        case 'ArrowRight':
           e.preventDefault();
+          if (currentIndexFocus === -1) {
+             focusables[0].focus();
+          } else if (currentIndexFocus < focusables.length - 1) {
+            focusables[currentIndexFocus + 1].focus();
+          }
+          break;
+          
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (currentIndexFocus > 0) {
+            focusables[currentIndexFocus - 1].focus();
+          }
           break;
 
+        case 'Enter':
+          // Se estiver focado no vídeo e apertar enter, pausa/despausa
+          if (activeElement === player) {
+            e.preventDefault();
+            if (player.paused) player.play();
+            else player.pause();
+          }
+          break;
+          
         case 'Escape':
-        case 'Back': // Tecla Back de alguns navegadores de TV
+        case 'Back': // Botão de voltar do controle de várias TVs Tizen/WebOS
           if (document.fullscreenElement) {
-            toggleFullscreen();
+             document.exitFullscreen();
           }
           break;
       }
     });
 
-    // Eventos dos botões do player
-    btnPlayPause.addEventListener('click', togglePlayPause);
-    btnNext.addEventListener('click', playNextVideo);
-    btnLoop.addEventListener('click', toggleLoop);
-    btnFullscreen.addEventListener('click', toggleFullscreen);
-
-    // Inicialização da interface
+    // Iniciar a aplicação
     window.addEventListener('DOMContentLoaded', () => {
       renderPlaylist();
-      // Foco inicial padrão no botão de reproduzir para facilitar o controle imediato
-      btnPlayPause.focus();
+      
+      if (driveVideos.length > 0) {
+        // Carrega o primeiro, mas não força Play agressivo ainda (boas práticas web)
+        player.src = getStreamUrl(driveVideos[0].id);
+        
+        // Colocamos o foco inicial na playlist para o usuário já apertar OK no controle e começar
+        setTimeout(() => {
+          const firstCard = playlistGrid.querySelector('.tv-focusable');
+          if (firstCard) firstCard.focus();
+        }, 100);
+      }
     });
   </script>
 </body>
