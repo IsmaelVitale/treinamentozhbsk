@@ -79,29 +79,53 @@
       <div class="w-px h-6 bg-slate-700"></div>
       <div class="flex items-center space-x-2">
         <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">OK</span>
-        <span class="text-slate-300 text-sm font-semibold">Carregar Vídeo</span>
+        <span class="text-slate-300 text-sm font-semibold">Tocar Vídeo</span>
+      </div>
+      <div class="w-px h-6 bg-slate-700"></div>
+      <div class="flex items-center space-x-2">
+        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">▶ / ⏸</span>
+        <span class="text-slate-300 text-sm font-semibold">Espaço</span>
+      </div>
+      <div class="w-px h-6 bg-slate-700"></div>
+      <div class="flex items-center space-x-2">
+        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">F</span>
+        <span class="text-slate-300 text-sm font-semibold">Tela Cheia</span>
       </div>
     </div>
   </header>
 
   <main class="flex-1 flex flex-col xl:flex-row gap-8 mt-8 overflow-hidden h-full">
     
-    <!-- Player do Google Drive -->
-    <section class="flex-shrink-0 w-full xl:w-2/3 max-h-[60vh] xl:max-h-none xl:h-full relative flex items-center justify-center">
-      <div class="w-full h-full bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative group">
+    <!-- Player Nativo HTML5 -->
+    <section class="flex-shrink-0 w-full xl:w-2/3 max-h-[60vh] xl:max-h-none xl:h-full relative flex flex-col items-center justify-center">
+      <!-- Título do vídeo tocando no momento -->
+      <div id="nowPlayingTitle" class="w-full text-center py-2 px-4 mb-2 text-xl font-bold text-sky-400 opacity-0 transition-opacity duration-300 hidden xl:block truncate">
+        <!-- Título será injetado aqui -->
+      </div>
+      
+      <div id="videoContainer" class="w-full h-full bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative group flex items-center justify-center">
         
-        <!-- Usamos Iframe em vez de <video> para garantir o carregamento direto dos servidores do Google -->
-        <iframe 
-          id="tvPlayerIframe" 
-          allow="autoplay; fullscreen" 
-          allowfullscreen 
-          src="">
-        </iframe>
+        <!-- Voltando para a tag <video> nativa para experiência real de TV -->
+        <video 
+          id="tvPlayer" 
+          class="w-full h-full object-contain"
+          controls 
+          autoplay 
+          playsinline
+          preload="auto"
+          style="display: none;">
+        </video>
 
         <!-- Loading Inicial (Some quando o usuário escolhe um vídeo) -->
-        <div id="initialState" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center z-10">
+        <div id="initialState" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center z-10 transition-opacity duration-300">
           <svg class="w-20 h-20 text-slate-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <span class="text-slate-500 font-semibold text-lg tracking-wider">Selecione um vídeo ao lado</span>
+        </div>
+
+        <!-- Feedback de Loading de Buffer -->
+        <div id="loadingBuffer" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20" style="display: none;">
+           <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+           <span class="text-white mt-4 font-medium">Carregando do Drive...</span>
         </div>
       </div>
     </section>
@@ -120,43 +144,47 @@
   </main>
 
   <script>
-    // IDs extraídas exatamente dos 4 links que você enviou
     const driveVideos = [
       {
-        title: "Episódio 1",
+        title: "Active_Drop",
         id: "1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD",
         thumbnailText: "01",
         desc: "Vídeo do Google Drive"
       },
       {
-        title: "V1_ESP_1_languages",
+        title: "V1_ESP",
         id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW",
         thumbnailText: "02",
         desc: "Vídeo do Google Drive"
       },
       {
-        title: "Episódio 3",
+        title: "V2_ESP",
         id: "1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb",
         thumbnailText: "03",
         desc: "Vídeo do Google Drive"
       },
       {
-        title: "Episódio 4",
+        title: "V3_ESP",
         id: "1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y",
         thumbnailText: "04",
         desc: "Vídeo do Google Drive"
       }
     ];
 
-    let currentIndex = -1; // -1 significa que nada foi selecionado ainda
+    let currentIndex = -1;
     
-    const playerIframe = document.getElementById('tvPlayerIframe');
+    const player = document.getElementById('tvPlayer');
+    const videoContainer = document.getElementById('videoContainer');
     const initialState = document.getElementById('initialState');
     const playlistGrid = document.getElementById('playlistGrid');
+    const loadingBuffer = document.getElementById('loadingBuffer');
+    const nowPlayingTitle = document.getElementById('nowPlayingTitle');
 
-    // Função que cria o link embed (iframe) correto do Google Drive
-    function getEmbedUrl(fileId) {
-      return `https://drive.google.com/file/d/${fileId}/preview?autoplay=1`;
+    // A mágica acontece aqui: usamos a rota de DOWNLOAD DIRETO em vez da rota de preview do Iframe
+    // Isso entrega o arquivo de mídia puro para a tag <video> ler.
+    // Nota: Se os vídeos forem maiores que ~100MB, o Google pode forçar uma tela de aviso de antivírus que quebra este link.
+    function getDirectStreamUrl(fileId) {
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
     }
 
     function renderPlaylist() {
@@ -164,7 +192,6 @@
       
       driveVideos.forEach((vid, index) => {
         const card = document.createElement('button');
-        // tabindex=0 torna o botão focável nativamente pelas setas do teclado/controle
         card.className = 'tv-focusable flex items-center text-left bg-slate-800/80 rounded-2xl p-4 gap-5 w-full cursor-pointer overflow-hidden';
         card.setAttribute('tabindex', '0');
         
@@ -177,11 +204,10 @@
           </div>
           <div class="flex flex-col flex-1 overflow-hidden">
             <h3 class="text-lg font-bold text-slate-100 truncate w-full">${vid.title}</h3>
-            <p class="text-sm text-slate-400 mt-1 truncate w-full">${vid.desc}</p>
+            <p class="text-sm text-slate-400 mt-1 truncate w-full" id="status-text-${index}">${vid.desc}</p>
           </div>
         `;
 
-        // Ativa o vídeo tanto pelo clique (mouse) quanto pelo enter (teclado/controle)
         card.addEventListener('click', () => loadAndPlay(index));
         card.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') loadAndPlay(index);
@@ -198,17 +224,24 @@
       
       cards.forEach((card, idx) => {
         const badge = card.querySelector('.status-badge');
+        const statusText = document.getElementById(`status-text-${idx}`);
         
         if (idx === currentIndex) {
           card.classList.add('border-sky-500', 'bg-slate-800');
           card.classList.remove('border-transparent', 'bg-slate-800/80');
           badge.classList.remove('hidden');
           badge.classList.add('flex');
+          if(statusText) statusText.textContent = "▶ Tocando agora";
+          statusText.classList.add('text-sky-400');
+          statusText.classList.remove('text-slate-400');
         } else {
           card.classList.remove('border-sky-500', 'bg-slate-800');
           card.classList.add('border-transparent', 'bg-slate-800/80');
           badge.classList.add('hidden');
           badge.classList.remove('flex');
+          if(statusText) statusText.textContent = driveVideos[idx].desc;
+          statusText.classList.remove('text-sky-400');
+          statusText.classList.add('text-slate-400');
         }
       });
     }
@@ -219,17 +252,85 @@
       currentIndex = index;
       const targetVideo = driveVideos[currentIndex];
       
-      // Esconde a tela de "Selecione um vídeo"
+      // Ajusta UI
       initialState.style.display = 'none';
+      player.style.display = 'block';
+      loadingBuffer.style.display = 'flex';
       
-      // Carrega o player do Google Drive dentro do Iframe
-      playerIframe.src = getEmbedUrl(targetVideo.id);
+      // Atualiza Título do Topo
+      nowPlayingTitle.textContent = targetVideo.title;
+      nowPlayingTitle.style.opacity = '1';
+
+      // Remove foco de quem estava para forçar foco no player temporariamente se necessário
+      document.activeElement.blur();
+      
+      // Carrega video nativo e dá play
+      player.src = getDirectStreamUrl(targetVideo.id);
+      
+      // Usa Promise do play() para lidar com autoplay blocks
+      const playPromise = player.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log("Autoplay pode ter sido prevenido pela TV. Usuário precisa interagir.");
+          loadingBuffer.style.display = 'none';
+        });
+      }
       
       updateHighlightUI();
     }
 
+    // Eventos do player para gerenciar a tela de carregamento (Buffering)
+    player.addEventListener('waiting', () => {
+       loadingBuffer.style.display = 'flex';
+    });
+
+    player.addEventListener('playing', () => {
+       loadingBuffer.style.display = 'none';
+       // Volta o foco para a lista de vídeos para o controle remoto continuar funcionando liso
+       const activeCard = playlistGrid.children[currentIndex];
+       if(activeCard && document.fullscreenElement === null) {
+           activeCard.focus();
+       }
+    });
+
+    player.addEventListener('canplay', () => {
+       loadingBuffer.style.display = 'none';
+    });
+
+    // Auto-play do próximo vídeo quando terminar
+    player.addEventListener('ended', () => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= driveVideos.length) {
+         nextIndex = 0; // Volta para o primeiro vídeo (loop da playlist)
+      }
+      loadAndPlay(nextIndex);
+    });
+
     document.addEventListener('keydown', (e) => {
-      // Coletamos todos os cards que podem receber foco
+      
+      // Controle de Play/Pause global com Espaço
+      if (e.key === ' ' || e.code === 'Space') {
+        if(currentIndex === -1) return; // Nao iniciou nada
+        e.preventDefault();
+        if (player.paused) player.play();
+        else player.pause();
+        return;
+      }
+
+      // Controle de Fullscreen com a tecla 'F'
+      if (e.key === 'f' || e.key === 'F') {
+        if(currentIndex === -1) return;
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          videoContainer.requestFullscreen().catch(err => console.log(err));
+        } else {
+          document.exitFullscreen();
+        }
+        return;
+      }
+
+      // Navegação por setas apenas nos cards
       const focusables = Array.from(document.querySelectorAll('.tv-focusable'));
       if (focusables.length === 0) return;
 
@@ -241,9 +342,9 @@
         case 'ArrowRight':
           e.preventDefault();
           if (currentIndexFocus === -1) {
-             focusables[0].focus(); // Se nada estiver focado, foca no primeiro
+             focusables[currentIndex === -1 ? 0 : currentIndex].focus(); 
           } else if (currentIndexFocus < focusables.length - 1) {
-            focusables[currentIndexFocus + 1].focus(); // Vai para o próximo
+            focusables[currentIndexFocus + 1].focus(); 
           }
           break;
           
@@ -251,7 +352,7 @@
         case 'ArrowLeft':
           e.preventDefault();
           if (currentIndexFocus > 0) {
-            focusables[currentIndexFocus - 1].focus(); // Volta pro anterior
+            focusables[currentIndexFocus - 1].focus(); 
           }
           break;
       }
@@ -261,7 +362,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       renderPlaylist();
       
-      // Coloca o foco visual no primeiro vídeo para o usuário saber por onde começar
+      // Coloca o foco visual no primeiro vídeo
       setTimeout(() => {
         const firstCard = playlistGrid.querySelector('.tv-focusable');
         if (firstCard) firstCard.focus();
