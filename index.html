@@ -3,7 +3,6 @@
 <html lang="pt-BR">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -13,27 +12,23 @@
 
     <title>Painel TV</title>
 
-
     <style>
 
         * {
             box-sizing: border-box;
         }
 
-
         html,
         body {
-
             width: 100%;
             height: 100%;
-
             margin: 0;
             padding: 0;
-
             overflow: hidden;
-
             background: #000;
+        }
 
+        body {
             font-family:
                 Arial,
                 Helvetica,
@@ -42,13 +37,11 @@
             color: #fff;
         }
 
-
-        /* =====================================================
+        /* ==============================
            CABEÇALHO
-        ===================================================== */
+        ============================== */
 
         .header {
-
             position: fixed;
 
             top: 0;
@@ -57,33 +50,33 @@
             width: 100vw;
             height: 8vh;
 
-            z-index: 100;
+            z-index: 20;
 
             display: flex;
 
             align-items: center;
             justify-content: space-between;
 
-            padding:
-                0 2vw;
+            padding: 0 2vw;
 
             background:
                 linear-gradient(
                     to bottom,
-                    rgba(17, 24, 39, .97),
-                    rgba(0, 0, 0, .88)
+                    rgba(17, 24, 39, .98),
+                    rgba(0, 0, 0, .90)
                 );
 
             border-bottom:
                 2px solid
                 rgba(255,255,255,.08);
 
+            /*
+             * Não interfere no player.
+             */
             pointer-events: none;
         }
 
-
         #videoTitle {
-
             margin: 0;
 
             max-width: 70vw;
@@ -100,9 +93,7 @@
             color: #fff;
 
             white-space: nowrap;
-
             overflow: hidden;
-
             text-overflow: ellipsis;
 
             text-shadow:
@@ -110,14 +101,12 @@
                 rgba(0,0,0,.8);
         }
 
-
         #clockDisplay {
-
             font-size:
                 clamp(
                     14px,
-                    1.5vw,
-                    26px
+                    1.4vw,
+                    25px
                 );
 
             font-weight: 600;
@@ -131,17 +120,15 @@
                 rgba(0,0,0,.8);
         }
 
-
-        /* =====================================================
-           ÁREA DO PLAYER
-        ===================================================== */
+        /* ==============================
+           PLAYER
+        ============================== */
 
         .video-area {
-
             position: fixed;
 
+            top: 8vh;
             left: 0;
-            bottom: 0;
 
             width: 100vw;
             height: 92vh;
@@ -151,29 +138,23 @@
             overflow: hidden;
         }
 
-
         #player {
-
             width: 100%;
             height: 100%;
         }
 
-
         #player iframe {
-
             width: 100% !important;
             height: 100% !important;
 
             border: 0 !important;
         }
 
-
-        /* =====================================================
+        /* ==============================
            TELA INICIAL
-        ===================================================== */
+        ============================== */
 
         #startOverlay {
-
             position: fixed;
 
             inset: 0;
@@ -184,12 +165,10 @@
 
             flex-direction: column;
 
-            justify-content: center;
             align-items: center;
+            justify-content: center;
 
             text-align: center;
-
-            padding: 30px;
 
             cursor: pointer;
 
@@ -202,9 +181,7 @@
                 );
         }
 
-
         #startOverlay h1 {
-
             margin:
                 0 0 20px;
 
@@ -216,12 +193,8 @@
                 );
         }
 
-
         #startOverlay p {
-
             margin: 0;
-
-            color: #9ca3af;
 
             font-size:
                 clamp(
@@ -229,62 +202,24 @@
                     1.8vw,
                     26px
                 );
-        }
 
-
-        /* =====================================================
-           STATUS
-        ===================================================== */
-
-        #status {
-
-            position: fixed;
-
-            left: 50%;
-            top: 50%;
-
-            transform:
-                translate(
-                    -50%,
-                    -50%
-                );
-
-            z-index: 200;
-
-            display: none;
-
-            padding:
-                18px 28px;
-
-            border-radius: 10px;
-
-            background:
-                rgba(
-                    0,
-                    0,
-                    0,
-                    .85
-                );
-
-            text-align: center;
+            color: #9ca3af;
         }
 
     </style>
-
 </head>
 
 
 <body>
 
-
-    <!-- =====================================================
-         CABEÇALHO
-    ===================================================== -->
+    <!-- ==============================
+         TÍTULO / RELÓGIO
+    ============================== -->
 
     <header class="header">
 
         <h1 id="videoTitle">
-            Painel TV
+            Active_Drop
         </h1>
 
         <div id="clockDisplay">
@@ -294,9 +229,9 @@
     </header>
 
 
-    <!-- =====================================================
+    <!-- ==============================
          PLAYER
-    ===================================================== -->
+    ============================== -->
 
     <main class="video-area">
 
@@ -305,25 +240,13 @@
     </main>
 
 
-    <!-- =====================================================
-         STATUS
-    ===================================================== -->
-
-    <div id="status">
-
-        Carregando vídeo...
-
-    </div>
-
-
-    <!-- =====================================================
-         TELA INICIAL
-    ===================================================== -->
+    <!-- ==============================
+         INÍCIO
+    ============================== -->
 
     <div
         id="startOverlay"
-        onclick="startPanel()"
-    >
+        onclick="startPanel()">
 
         <h1>
             Painel TV Preparado
@@ -336,18 +259,14 @@
     </div>
 
 
-    <!-- =====================================================
-         YOUTUBE API
-    ===================================================== -->
-
     <script src="https://www.youtube.com/iframe_api"></script>
 
 
     <script>
 
-        /* =====================================================
+        /* ==============================
            PLAYLIST
-        ===================================================== */
+        ============================== */
 
         const playlist = [
 
@@ -374,24 +293,22 @@
         ];
 
 
-        /* =====================================================
+        /* ==============================
            VARIÁVEIS
-        ===================================================== */
+        ============================== */
 
         let player = null;
 
         let playerReady = false;
 
-        let panelStarted = false;
+        let started = false;
 
         let currentIndex = 0;
 
-        let changing = false;
 
-
-        /* =====================================================
+        /* ==============================
            ELEMENTOS
-        ===================================================== */
+        ============================== */
 
         const title =
             document.getElementById(
@@ -408,84 +325,49 @@
                 "startOverlay"
             );
 
-        const status =
-            document.getElementById(
-                "status"
-            );
 
-
-        /* =====================================================
-           YOUTUBE API
-        ===================================================== */
+        /* ==============================
+           CRIA PLAYER
+        ============================== */
 
         function onYouTubeIframeAPIReady() {
-
-            createPlayer();
-
-        }
-
-
-        /* =====================================================
-           CRIA PLAYER
-        ===================================================== */
-
-        function createPlayer() {
 
             player =
                 new YT.Player(
                     "player",
                     {
 
-                        width:
-                            "100%",
-
-                        height:
-                            "100%",
+                        width: "100%",
+                        height: "100%",
 
                         videoId:
                             playlist[0].id,
 
                         playerVars: {
 
-                            /*
-                             * Começa automaticamente quando
-                             * liberado pelo usuário.
-                             */
-                            autoplay: 1,
+                            autoplay: 0,
 
-                            /*
-                             * REMOVE CONTROLES.
-                             */
                             controls: 0,
 
-                            /*
-                             * Evita teclado dentro do player.
-                             */
                             disablekb: 1,
 
-                            /*
-                             * Não mostrar fullscreen
-                             * do player.
-                             */
                             fs: 0,
 
-                            /*
-                             * Reprodução inline.
-                             */
                             playsinline: 1,
 
-                            /*
-                             * Reduz vídeos relacionados.
-                             */
                             rel: 0,
 
+                            iv_load_policy: 3,
+
+                            cc_load_policy: 0,
+
                             /*
-                             * Não iniciar silenciado.
-                             *
-                             * O clique do usuário no painel
-                             * será usado para liberar o áudio.
+                             * O domínio será o seu domínio
+                             * quando você colocar este arquivo
+                             * no site.
                              */
-                            mute: 0
+                            origin:
+                                window.location.origin
 
                         },
 
@@ -508,67 +390,39 @@
         }
 
 
-        /* =====================================================
+        /* ==============================
            PLAYER PRONTO
-        ===================================================== */
+        ============================== */
 
         function onPlayerReady() {
 
             playerReady = true;
 
-
-            /*
-             * Volume inicial.
-             */
-
             player.setVolume(100);
 
-
-            /*
-             * Atualiza título.
-             */
-
             updateTitle();
-
-
-            /*
-             * Só toca depois que o usuário
-             * iniciar o painel.
-             */
-
-            if (panelStarted) {
-
-                startVideo();
-
-            }
 
         }
 
 
-        /* =====================================================
-           INICIAR PAINEL
-        ===================================================== */
+        /* ==============================
+           INICIAR
+        ============================== */
 
         async function startPanel() {
 
-            if (panelStarted) {
+            if (started) {
                 return;
             }
 
-
-            panelStarted = true;
-
-
-            /*
-             * Remove tela inicial.
-             */
+            started = true;
 
             overlay.style.display =
                 "none";
 
 
             /*
-             * Tenta fullscreen.
+             * Fullscreen da página.
              */
 
             try {
@@ -584,7 +438,7 @@
 
                 }
 
-            } catch (error) {
+            } catch (e) {
 
                 console.log(
                     "Fullscreen não disponível."
@@ -593,39 +447,31 @@
             }
 
 
-            /*
-             * Player já pronto?
-             */
-
             if (playerReady) {
 
-                startVideo();
+                playCurrent();
 
             }
 
         }
 
 
-        /* =====================================================
-           COMEÇA VÍDEO
-        ===================================================== */
+        /* ==============================
+           REPRODUZ VÍDEO
+        ============================== */
 
-        function startVideo() {
+        function playCurrent() {
 
             if (!playerReady) {
                 return;
             }
 
 
-            /*
-             * Título do vídeo atual.
-             */
-
             updateTitle();
 
 
             /*
-             * Garante volume.
+             * SOM LIGADO
              */
 
             player.unMute();
@@ -634,7 +480,7 @@
 
 
             /*
-             * Carrega vídeo atual.
+             * Carrega o vídeo atual.
              */
 
             player.loadVideoById(
@@ -642,23 +488,19 @@
             );
 
 
-            /*
-             * Inicia.
-             */
-
             player.playVideo();
 
         }
 
 
-        /* =====================================================
-           MUDANÇA DE ESTADO
-        ===================================================== */
+        /* ==============================
+           TROCA AUTOMÁTICA
+        ============================== */
 
         function onPlayerStateChange(event) {
 
             /*
-             * Vídeo terminou.
+             * 0 = ENDED
              */
 
             if (
@@ -666,154 +508,72 @@
                 YT.PlayerState.ENDED
             ) {
 
-                nextVideo();
-
-            }
-
-
-            /*
-             * Começou a tocar.
-             */
-
-            if (
-                event.data ===
-                YT.PlayerState.PLAYING
-            ) {
-
-                /*
-                 * Garante som.
-                 */
-
-                player.unMute();
-
-                player.setVolume(100);
+                currentIndex++;
 
 
                 /*
-                 * Atualiza título.
+                 * Volta ao primeiro.
                  */
 
-                updateTitle();
+                if (
+                    currentIndex >=
+                    playlist.length
+                ) {
+
+                    currentIndex = 0;
+
+                }
+
+
+                playCurrent();
 
             }
 
         }
 
 
-        /* =====================================================
-           PRÓXIMO
-        ===================================================== */
+        /* ==============================
+           ERRO
+        ============================== */
 
-        function nextVideo() {
+        function onPlayerError(event) {
 
-            if (changing) {
-                return;
-            }
-
-
-            changing = true;
-
-
-            currentIndex++;
-
-
-            /*
-             * Loop infinito.
-             */
-
-            if (
-                currentIndex >=
-                playlist.length
-            ) {
-
-                currentIndex = 0;
-
-            }
-
-
-            updateTitle();
-
-
-            /*
-             * Pequena pausa técnica apenas para
-             * o YouTube processar a troca.
-             *
-             * NÃO é espera entre vídeos.
-             */
-
-            player.loadVideoById(
-                playlist[currentIndex].id
+            console.error(
+                "Erro YouTube:",
+                event.data
             );
 
 
-            player.playVideo();
-
+            /*
+             * Pula para o próximo.
+             */
 
             setTimeout(
                 () => {
 
-                    changing = false;
+                    currentIndex++;
+
+                    if (
+                        currentIndex >=
+                        playlist.length
+                    ) {
+
+                        currentIndex = 0;
+
+                    }
+
+                    playCurrent();
 
                 },
-                300
+                1500
             );
 
         }
 
 
-        /* =====================================================
-           ANTERIOR
-        ===================================================== */
-
-        function previousVideo() {
-
-            if (changing) {
-                return;
-            }
-
-
-            changing = true;
-
-
-            currentIndex--;
-
-
-            if (
-                currentIndex < 0
-            ) {
-
-                currentIndex =
-                    playlist.length - 1;
-
-            }
-
-
-            updateTitle();
-
-
-            player.loadVideoById(
-                playlist[currentIndex].id
-            );
-
-
-            player.playVideo();
-
-
-            setTimeout(
-                () => {
-
-                    changing = false;
-
-                },
-                300
-            );
-
-        }
-
-
-        /* =====================================================
+        /* ==============================
            TÍTULO
-        ===================================================== */
+        ============================== */
 
         function updateTitle() {
 
@@ -824,37 +584,9 @@
         }
 
 
-        /* =====================================================
-           ERRO
-        ===================================================== */
-
-        function onPlayerError(event) {
-
-            console.error(
-                "Erro do YouTube:",
-                event.data
-            );
-
-
-            /*
-             * Não deixa a TV parada.
-             */
-
-            setTimeout(
-                () => {
-
-                    nextVideo();
-
-                },
-                1000
-            );
-
-        }
-
-
-        /* =====================================================
+        /* ==============================
            RELÓGIO
-        ===================================================== */
+        ============================== */
 
         function updateClock() {
 
@@ -867,20 +599,12 @@
                     .toLocaleDateString(
                         "pt-BR",
                         {
-                            day:
-                                "2-digit",
-
-                            month:
-                                "short",
-
-                            year:
-                                "numeric"
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric"
                         }
                     )
-                    .replace(
-                        ".",
-                        ""
-                    );
+                    .replace(".", "");
 
 
             const time =
@@ -888,14 +612,9 @@
                     .toLocaleTimeString(
                         "pt-BR",
                         {
-                            hour:
-                                "2-digit",
-
-                            minute:
-                                "2-digit",
-
-                            second:
-                                "2-digit"
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit"
                         }
                     );
 
@@ -908,16 +627,15 @@
 
         updateClock();
 
-
         setInterval(
             updateClock,
             1000
         );
 
 
-        /* =====================================================
+        /* ==============================
            CONTROLE REMOTO
-        ===================================================== */
+        ============================== */
 
         window.addEventListener(
             "keydown",
@@ -928,7 +646,7 @@
                  */
 
                 if (
-                    !panelStarted &&
+                    !started &&
                     (
                         event.key === "Enter" ||
                         event.key === " "
@@ -955,7 +673,18 @@
 
                     event.preventDefault();
 
-                    nextVideo();
+                    currentIndex++;
+
+                    if (
+                        currentIndex >=
+                        playlist.length
+                    ) {
+
+                        currentIndex = 0;
+
+                    }
+
+                    playCurrent();
 
                     return;
 
@@ -973,7 +702,18 @@
 
                     event.preventDefault();
 
-                    previousVideo();
+                    currentIndex--;
+
+                    if (
+                        currentIndex < 0
+                    ) {
+
+                        currentIndex =
+                            playlist.length - 1;
+
+                    }
+
+                    playCurrent();
 
                     return;
 
@@ -983,21 +723,18 @@
         );
 
 
-        /* =====================================================
-           PROTEÇÕES
-        ===================================================== */
+        /* ==============================
+           BLOQUEIOS
+        ============================== */
 
         document.addEventListener(
             "contextmenu",
-            event =>
-                event.preventDefault()
+            e => e.preventDefault()
         );
-
 
         document.addEventListener(
             "dragstart",
-            event =>
-                event.preventDefault()
+            e => e.preventDefault()
         );
 
     </script>
