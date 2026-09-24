@@ -1,188 +1,909 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Painel TV - Vídeos</title>
-    <!-- Carregando Tailwind CSS para estilização rápida e responsiva -->
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000000; /* Fundo preto melhora o contraste na TV */
-            color: #ffffff;
-            overflow: hidden; /* Remove qualquer barra de rolagem (essencial para TV) */
-            margin: 0;
-            padding: 0;
+        * {
+            box-sizing: border-box;
         }
 
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #fff;
+        }
+
+        /* ==============================
+           CABEÇALHO
+        ============================== */
+
         .header-area {
-            height: 8vh; /* Ocupa exatamente 8% da altura da tela */
+            width: 100vw;
+            height: 8vh;
+
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2vw; /* Margem lateral proporcional à tela */
-            background: linear-gradient(to bottom, #111827, #000000); /* Degradê sutil */
+
+            padding: 0 2vw;
+
+            background:
+                linear-gradient(
+                    to bottom,
+                    #111827,
+                    #000000
+                );
+
             border-bottom: 2px solid #1f2937;
+
+            position: relative;
+            z-index: 10;
         }
+
+        #videoTitle {
+            margin: 0;
+
+            font-size: clamp(
+                18px,
+                2.2vw,
+                36px
+            );
+
+            font-weight: 700;
+
+            color: #f3f4f6;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            max-width: 70vw;
+        }
+
+        #clockDisplay {
+            font-size: clamp(
+                14px,
+                1.5vw,
+                26px
+            );
+
+            font-weight: 600;
+
+            color: #d1d5db;
+
+            white-space: nowrap;
+        }
+
+        /* ==============================
+           ÁREA DO VÍDEO
+        ============================== */
 
         .video-area {
-            height: 92vh; /* Ocupa os 92% restantes da tela */
             width: 100vw;
+            height: 92vh;
+
             display: flex;
-            justify-content: center;
             align-items: center;
-            background-color: #000;
+            justify-content: center;
+
+            background: #000;
+
+            position: relative;
         }
 
-        video {
+        #tvPlayer {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Garante que o vídeo não seja cortado nem esticado */
+
+            display: block;
+
+            object-fit: contain;
+
+            background: #000;
+
             outline: none;
+
+            /*
+             * Não exibe controles.
+             */
+            appearance: none;
+
+            /*
+             * Impede seleção.
+             */
+            user-select: none;
+            -webkit-user-select: none;
         }
-        
-        /* Ocultando controles nativos para um visual mais limpo na TV */
-        video::-webkit-media-controls {
+
+        /*
+         * Esconde controles nativos caso algum navegador
+         * tente mostrá-los.
+         */
+        #tvPlayer::-webkit-media-controls {
             display: none !important;
+        }
+
+        #tvPlayer::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+
+        /* ==============================
+           TELA INICIAL
+        ============================== */
+
+        #startOverlay {
+            position: fixed;
+            inset: 0;
+
+            z-index: 9999;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    #111827 0%,
+                    #030712 70%,
+                    #000000 100%
+                );
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+
+            cursor: pointer;
+
+            padding: 30px;
+        }
+
+        #startOverlay h2 {
+            margin: 0 0 18px;
+
+            font-size: clamp(
+                26px,
+                4vw,
+                56px
+            );
+        }
+
+        #startOverlay p {
+            margin: 0;
+
+            font-size: clamp(
+                15px,
+                1.8vw,
+                25px
+            );
+
+            color: #9ca3af;
+        }
+
+        #loadingText {
+            margin-top: 20px;
+
+            font-size: 14px;
+
+            color: #6b7280;
+        }
+
+        /* ==============================
+           ESTADO DE ERRO
+        ============================== */
+
+        #errorMessage {
+            position: absolute;
+
+            z-index: 20;
+
+            left: 50%;
+            top: 50%;
+
+            transform: translate(-50%, -50%);
+
+            display: none;
+
+            text-align: center;
+
+            padding: 25px;
+
+            color: #fff;
+        }
+
+        #errorMessage strong {
+            display: block;
+
+            font-size: 22px;
+
+            margin-bottom: 10px;
+        }
+
+        #errorMessage span {
+            color: #9ca3af;
+        }
+
+        /* ==============================
+           MODO TELA CHEIA
+        ============================== */
+
+        :fullscreen {
+            background: #000;
+        }
+
+        :-webkit-full-screen {
+            background: #000;
         }
     </style>
 </head>
+
 <body>
 
-    <!-- Cabeçalho (Título e Data/Hora) -->
+    <!-- ==============================
+         CABEÇALHO
+    ============================== -->
+
     <header class="header-area">
-        <h1 id="videoTitle" class="text-3xl font-bold tracking-wide text-gray-100 drop-shadow-md">
-            Carregando título...
+
+        <h1 id="videoTitle">
+            Preparando vídeo...
         </h1>
-        <div id="clockDisplay" class="text-2xl font-semibold text-gray-300 drop-shadow-md tracking-wider">
-            --/--/---- --:--
+
+        <div id="clockDisplay">
+            --/--/---- --:--:--
         </div>
+
     </header>
 
-    <!-- Tela de Início para liberar permissões do navegador contra o bloqueio de Autoplay -->
-    <div id="startOverlay" class="absolute inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center cursor-pointer" onclick="startPanel()">
-        <h2 class="text-4xl text-white font-bold mb-4">Painel TV Preparado</h2>
-        <p class="text-gray-400 text-xl animate-pulse">Clique aqui ou aperte OK no controle para iniciar a reprodução</p>
-    </div>
 
-    <!-- Área de Reprodução de Vídeo -->
-    <main class="video-area relative">
-        <!-- Mudamos para iframe para evitar os bloqueios de segurança do servidor do Drive -->
-        <!-- pointer-events: none impede que o foco do teclado vá pro Drive, mantendo nosso controle funcionando -->
-        <iframe id="tvPlayer" allow="autoplay; fullscreen" style="width: 100%; height: 100%; border: none; pointer-events: none;"></iframe>
+    <!-- ==============================
+         ÁREA DO PLAYER
+    ============================== -->
+
+    <main class="video-area">
+
+        <video
+            id="tvPlayer"
+            autoplay
+            muted
+            playsinline
+            preload="auto"
+            disablepictureinpicture
+        ></video>
+
+        <div id="errorMessage">
+            <strong>Não foi possível reproduzir o vídeo</strong>
+            <span>Tentando avançar para o próximo...</span>
+        </div>
+
     </main>
 
+
+    <!-- ==============================
+         TELA INICIAL
+    ============================== -->
+
+    <div
+        id="startOverlay"
+        onclick="startPanel()"
+    >
+
+        <h2>
+            Painel TV Preparado
+        </h2>
+
+        <p>
+            Clique aqui ou aperte OK no controle para iniciar
+        </p>
+
+        <div id="loadingText">
+            Reprodução automática ativada
+        </div>
+
+    </div>
+
+
     <script>
-        // O player do Drive requer que informemos o tempo de cada vídeo para a troca automática
+
+        /*
+         * =====================================================
+         * PLAYLIST
+         * =====================================================
+         *
+         * Agora NÃO existe mais "duration".
+         *
+         * O navegador detecta automaticamente quando o vídeo
+         * terminou através do evento:
+         *
+         *      ended
+         *
+         */
+
         const playlist = [
+
             {
                 title: "Active_Drop",
-                id: "1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD",
-                duration: 30 // ALERTA: Digite aqui o tempo exato deste vídeo em segundos!
+                id: "1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD"
             },
+
             {
                 title: "V1_ESP",
-                id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW",
-                duration: 30 // Mude este tempo para os segundos reais do vídeo
+                id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW"
             },
+
             {
                 title: "V2_ESP",
-                id: "1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb",
-                duration: 30 // Mude este tempo para os segundos reais do vídeo
+                id: "1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb"
             },
+
             {
                 title: "V3_ESP",
-                id: "1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y",
-                duration: 30 // Mude este tempo para os segundos reais do vídeo
+                id: "1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y"
             }
+
         ];
 
+
+        /*
+         * =====================================================
+         * VARIÁVEIS
+         * =====================================================
+         */
+
         let currentIndex = 0;
-        let videoTimer; // Controlador de tempo do cronômetro
-        let isPanelActive = false; // Bloqueia a execução antes do clique inicial
-        
-        // Elementos do DOM
-        const player = document.getElementById('tvPlayer');
-        const titleDisplay = document.getElementById('videoTitle');
-        const clockDisplay = document.getElementById('clockDisplay');
-        const overlay = document.getElementById('startOverlay');
 
-        // Função para iniciar o painel
-        function startPanel() {
-            overlay.style.display = 'none';
-            isPanelActive = true;
-            loadVideo(currentIndex);
+        let isPanelActive = false;
+
+        let changingVideo = false;
+
+        let fullscreenRequested = false;
+
+
+        /*
+         * =====================================================
+         * ELEMENTOS
+         * =====================================================
+         */
+
+        const player =
+            document.getElementById("tvPlayer");
+
+        const titleDisplay =
+            document.getElementById("videoTitle");
+
+        const clockDisplay =
+            document.getElementById("clockDisplay");
+
+        const overlay =
+            document.getElementById("startOverlay");
+
+        const errorMessage =
+            document.getElementById("errorMessage");
+
+
+        /*
+         * =====================================================
+         * CONVERTE ID DO DRIVE PARA URL DE VÍDEO
+         * =====================================================
+         */
+
+        function getDriveVideoUrl(id) {
+
+            return (
+                "https://drive.google.com/uc" +
+                "?export=download" +
+                "&id=" +
+                encodeURIComponent(id)
+            );
+
         }
 
-        // Função para atualizar o relógio na tela
-        function updateClock() {
-            const now = new Date();
-            
-            // Formatando a data (Ex: 23 de Set)
-            const optionsDate = { day: '2-digit', month: 'short', year: 'numeric' };
-            let dateStr = now.toLocaleDateString('pt-BR', optionsDate);
-            dateStr = dateStr.replace('.', ''); // Remove o ponto do mês se houver
-            
-            // Formatando a hora (Ex: 14:30:00)
-            const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-            const timeStr = now.toLocaleTimeString('pt-BR', optionsTime);
 
-            clockDisplay.textContent = `${dateStr} - ${timeStr}`;
-        }
-        
-        // Inicia o relógio imediatamente e atualiza a cada segundo
-        updateClock();
-        setInterval(updateClock, 1000);
+        /*
+         * =====================================================
+         * INICIA O PAINEL
+         * =====================================================
+         */
 
-        // Função para carregar e iniciar um vídeo específico
-        function loadVideo(index) {
-            if (!isPanelActive) return; // Não faz nada se ainda não iniciou a tela
-            
-            clearTimeout(videoTimer); // Limpa o cronômetro anterior para não pular vídeos rápido demais
+        async function startPanel() {
 
-            // Verifica limites da lista (Loop Infinito)
-            if (index >= playlist.length) {
-                currentIndex = 0;
-            } else if (index < 0) {
-                currentIndex = playlist.length - 1;
-            } else {
-                currentIndex = index;
-            }
-
-            const videoData = playlist[currentIndex];
-            
-            // Atualiza o texto da Interface
-            titleDisplay.textContent = videoData.title;
-            
-            // Usa o link de preview do Iframe do Google Drive
-            player.src = `https://drive.google.com/file/d/${videoData.id}/preview?autoplay=1&mute=1`;
-            
-            // Define o cronômetro para pular de vídeo baseado no tempo cadastrado lá em cima
-            videoTimer = setTimeout(() => {
-                loadVideo(currentIndex + 1);
-            }, videoData.duration * 1000); // Multiplica por 1000 para converter segundos em milissegundos
-        }
-
-        // Controle por Teclado (Simulando controle remoto da TV)
-        window.addEventListener('keydown', (event) => {
-            // Permite iniciar a tela clicando ENTER ou ESPAÇO
-            if (!isPanelActive && (event.key === 'Enter' || event.key === ' ')) {
-                startPanel();
+            if (isPanelActive) {
                 return;
             }
 
-            if (event.key === 'ArrowRight' || event.key === 'MediaTrackNext') {
-                // Seta Direita: Próximo vídeo na hora
-                loadVideo(currentIndex + 1);
-            } else if (event.key === 'ArrowLeft' || event.key === 'MediaTrackPrevious') {
-                // Seta Esquerda: Vídeo anterior na hora
-                loadVideo(currentIndex - 1);
+            isPanelActive = true;
+
+            overlay.style.display = "none";
+
+
+            /*
+             * Tenta colocar a aplicação em tela cheia.
+             *
+             * Isso é especialmente útil em uma TV,
+             * porque remove a barra do navegador.
+             */
+
+            try {
+
+                if (
+                    !document.fullscreenElement &&
+                    document.documentElement.requestFullscreen
+                ) {
+
+                    await document.documentElement.requestFullscreen();
+
+                    fullscreenRequested = true;
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "Tela cheia não autorizada pelo navegador:",
+                    error
+                );
+
             }
-            // Observação: Controle de volume foi removido porque o iframe oficial do Drive não permite mutar/desmutar via código.
-        });
+
+
+            loadVideo(currentIndex);
+
+        }
+
+
+        /*
+         * =====================================================
+         * CARREGA VÍDEO
+         * =====================================================
+         */
+
+        function loadVideo(index) {
+
+            if (!isPanelActive) {
+                return;
+            }
+
+
+            if (changingVideo) {
+                return;
+            }
+
+
+            changingVideo = true;
+
+
+            /*
+             * Loop da playlist.
+             */
+
+            if (index >= playlist.length) {
+
+                currentIndex = 0;
+
+            } else if (index < 0) {
+
+                currentIndex = playlist.length - 1;
+
+            } else {
+
+                currentIndex = index;
+
+            }
+
+
+            const videoData =
+                playlist[currentIndex];
+
+
+            /*
+             * Atualiza título.
+             */
+
+            titleDisplay.textContent =
+                videoData.title;
+
+
+            /*
+             * Esconde mensagem de erro.
+             */
+
+            errorMessage.style.display =
+                "none";
+
+
+            /*
+             * Para o vídeo anterior.
+             */
+
+            player.pause();
+
+
+            /*
+             * Limpa a fonte anterior.
+             */
+
+            player.removeAttribute("src");
+
+            player.load();
+
+
+            /*
+             * Define novo vídeo.
+             */
+
+            player.src =
+                getDriveVideoUrl(
+                    videoData.id
+                );
+
+
+            /*
+             * Garante as propriedades importantes
+             * para TV / autoplay.
+             */
+
+            player.muted = true;
+
+            player.autoplay = true;
+
+            player.playsInline = true;
+
+
+            /*
+             * Inicia carregamento.
+             */
+
+            player.load();
+
+
+            /*
+             * Assim que o navegador tiver dados suficientes,
+             * começa a reprodução.
+             */
+
+            player.addEventListener(
+                "loadeddata",
+                startCurrentVideo,
+                {
+                    once: true
+                }
+            );
+
+
+            /*
+             * Libera a troca de vídeo.
+             */
+
+            setTimeout(() => {
+
+                changingVideo = false;
+
+            }, 200);
+
+        }
+
+
+        /*
+         * =====================================================
+         * INICIA VÍDEO ATUAL
+         * =====================================================
+         */
+
+        async function startCurrentVideo() {
+
+            try {
+
+                player.muted = true;
+
+                await player.play();
+
+            } catch (error) {
+
+                console.warn(
+                    "Falha ao iniciar vídeo:",
+                    error
+                );
+
+                /*
+                 * Como já houve interação do usuário
+                 * na tela inicial, normalmente o autoplay
+                 * será autorizado.
+                 */
+
+                try {
+
+                    await player.play();
+
+                } catch (secondError) {
+
+                    console.error(
+                        "Não foi possível iniciar:",
+                        secondError
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * =====================================================
+         * QUANDO O VÍDEO TERMINA
+         * =====================================================
+         *
+         * AQUI está a principal mudança.
+         *
+         * Não usamos mais 30 segundos.
+         *
+         * O próprio player informa o momento exato
+         * em que o vídeo chegou ao fim.
+         */
+
+        player.addEventListener(
+            "ended",
+            () => {
+
+                loadVideo(
+                    currentIndex + 1
+                );
+
+            }
+        );
+
+
+        /*
+         * =====================================================
+         * ERRO DE REPRODUÇÃO
+         * =====================================================
+         *
+         * Se um vídeo do Drive der erro, o painel não trava.
+         * Ele tenta o próximo.
+         */
+
+        player.addEventListener(
+            "error",
+            () => {
+
+                console.error(
+                    "Erro ao reproduzir:",
+                    playlist[currentIndex]
+                );
+
+
+                errorMessage.style.display =
+                    "block";
+
+
+                setTimeout(() => {
+
+                    errorMessage.style.display =
+                        "none";
+
+
+                    loadVideo(
+                        currentIndex + 1
+                    );
+
+                }, 1800);
+
+            }
+        );
+
+
+        /*
+         * =====================================================
+         * RELÓGIO
+         * =====================================================
+         */
+
+        function updateClock() {
+
+            const now =
+                new Date();
+
+
+            const dateOptions = {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            };
+
+
+            let dateStr =
+                now.toLocaleDateString(
+                    "pt-BR",
+                    dateOptions
+                );
+
+
+            dateStr =
+                dateStr.replace(
+                    ".",
+                    ""
+                );
+
+
+            const timeOptions = {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            };
+
+
+            const timeStr =
+                now.toLocaleTimeString(
+                    "pt-BR",
+                    timeOptions
+                );
+
+
+            clockDisplay.textContent =
+                `${dateStr} - ${timeStr}`;
+
+        }
+
+
+        updateClock();
+
+        setInterval(
+            updateClock,
+            1000
+        );
+
+
+        /*
+         * =====================================================
+         * CONTROLE REMOTO / TECLADO
+         * =====================================================
+         */
+
+        window.addEventListener(
+            "keydown",
+            (event) => {
+
+
+                /*
+                 * ENTER ou ESPAÇO inicia o painel.
+                 */
+
+                if (
+                    !isPanelActive &&
+                    (
+                        event.key === "Enter" ||
+                        event.key === " "
+                    )
+                ) {
+
+                    event.preventDefault();
+
+                    startPanel();
+
+                    return;
+                }
+
+
+                /*
+                 * PRÓXIMO
+                 */
+
+                if (
+                    event.key === "ArrowRight" ||
+                    event.key === "MediaTrackNext"
+                ) {
+
+                    event.preventDefault();
+
+                    loadVideo(
+                        currentIndex + 1
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * ANTERIOR
+                 */
+
+                if (
+                    event.key === "ArrowLeft" ||
+                    event.key === "MediaTrackPrevious"
+                ) {
+
+                    event.preventDefault();
+
+                    loadVideo(
+                        currentIndex - 1
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * F11 também pode ser utilizado
+                 * dependendo do navegador/TV.
+                 */
+
+                if (event.key === "F11") {
+
+                    event.preventDefault();
+
+                }
+
+            }
+        );
+
+
+        /*
+         * =====================================================
+         * EVITA CLIQUE/MOUSE NO PLAYER
+         * =====================================================
+         *
+         * Como é um painel de TV, não queremos que alguém
+         * acidentalmente abra controles ou pause o vídeo.
+         */
+
+        player.addEventListener(
+            "click",
+            (event) => {
+
+                event.preventDefault();
+
+            }
+        );
+
+
+        /*
+         * =====================================================
+         * EVITA MENU DE CONTEXTO
+         * =====================================================
+         */
+
+        document.addEventListener(
+            "contextmenu",
+            (event) => {
+
+                event.preventDefault();
+
+            }
+        );
+
+
+        /*
+         * =====================================================
+         * IMPEDIR ARRASTAR ELEMENTOS
+         * =====================================================
+         */
+
+        document.addEventListener(
+            "dragstart",
+            (event) => {
+
+                event.preventDefault();
+
+            }
+        );
+
+
     </script>
+
 </body>
+
 </html>
