@@ -1,321 +1,187 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart TV - Drive Player</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel TV - Vídeos</title>
+    <!-- Carregando Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Fundo preto melhora o contraste na TV */
+            color: #ffffff;
+            overflow: hidden; /* Remove qualquer barra de rolagem (essencial para TV) */
+            margin: 0;
+            padding: 0;
+        }
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .header-area {
+            height: 8vh; /* Ocupa exatamente 8% da altura da tela */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2vw; /* Margem lateral proporcional à tela */
+            background: linear-gradient(to bottom, #111827, #000000); /* Degradê sutil */
+            border-bottom: 2px solid #1f2937;
+        }
 
-    * {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      user-select: none;
-      outline: none; /* Remove outline padrão para usarmos nossa própria borda de foco */
-    }
+        .video-area {
+            height: 92vh; /* Ocupa os 92% restantes da tela */
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
 
-    body {
-      background-color: #0b1120;
-      color: #f8fafc;
-      overflow: hidden; /* Trava a rolagem na TV */
-    }
-
-    /* Oculta scrollbars nativas para um visual de App de TV */
-    ::-webkit-scrollbar {
-      display: none;
-    }
-    html {
-      scrollbar-width: none;
-    }
-
-    /* Estilização para o foco da TV (quando usa as setas do controle) */
-    .tv-focusable {
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      transform-origin: left center;
-      border: 4px solid transparent;
-    }
-
-    .tv-focusable:focus,
-    .tv-focusable.active-focus {
-      transform: scale(1.02);
-      border-color: #38bdf8; /* Borda azul clara brilhante */
-      background-color: #1e293b;
-      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.3), 0 20px 25px -5px rgba(0, 0, 0, 0.7);
-      z-index: 20;
-    }
-
-    /* 
-      O PULO DO GATO PARA O GOOGLE DRIVE:
-      O container oculta o que vazar (overflow: hidden).
-      O iframe é empurrado -60px para cima, escondendo exatamente a barra preta superior 
-      do Google Drive (onde fica o botão de abrir janela, título feio, etc).
-      A altura ganha +60px para compensar e manter a barra de progresso no fundo.
-    */
-    .iframe-crop-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden; 
-      background-color: #000;
-      border-radius: 1.5rem; /* rounded-3xl */
-    }
-
-    .iframe-crop-container iframe {
-      position: absolute;
-      top: -60px; /* Esconde a barra superior do Google */
-      left: 0;
-      width: 100%;
-      height: calc(100% + 60px); /* Compensa a altura perdida no topo */
-      border: none;
-      background-color: transparent;
-    }
-  </style>
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Garante que o vídeo não seja cortado nem esticado */
+            outline: none;
+        }
+        
+        /* Ocultando controles nativos para um visual mais limpo na TV */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+    </style>
 </head>
-<body class="h-screen w-screen flex flex-col p-6 sm:p-10 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+<body>
 
-  <!-- Cabeçalho Limpo -->
-  <header class="flex items-center justify-between pb-6 flex-shrink-0 border-b border-slate-800/50">
-    <div class="flex items-center space-x-5">
-      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-        </svg>
-      </div>
-      <div>
-        <h1 class="text-3xl font-extrabold tracking-tight text-white">DriveTV Hub</h1>
-        <p class="text-slate-400 font-medium tracking-wide">Interface Otimizada para TV</p>
-      </div>
-    </div>
-
-    <!-- Instruções do Controle -->
-    <div class="hidden md:flex items-center space-x-4 bg-slate-900/60 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-800">
-      <div class="flex items-center space-x-2">
-        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">Setas</span>
-        <span class="text-slate-300 text-sm font-semibold">Navegar Cards</span>
-      </div>
-      <div class="w-px h-6 bg-slate-700"></div>
-      <div class="flex items-center space-x-2">
-        <span class="bg-slate-800 text-sky-400 px-3 py-1 rounded-lg text-sm font-bold shadow-inner">OK</span>
-        <span class="text-slate-300 text-sm font-semibold">Assistir</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Área Principal -->
-  <main class="flex-1 flex flex-col xl:flex-row gap-8 mt-8 overflow-hidden h-full">
-    
-    <!-- Player de Vídeo -->
-    <section class="flex-shrink-0 w-full xl:w-2/3 max-h-[60vh] xl:max-h-none xl:h-full relative flex flex-col items-center justify-center">
-      
-      <!-- Título Customizado (Fica em cima do player de forma nativa) -->
-      <div id="nowPlayingTitle" class="w-full text-center py-2 px-4 mb-3 text-2xl font-bold text-sky-400 opacity-0 transition-opacity duration-300 hidden xl:block truncate">
-        <!-- Título injetado via JS -->
-      </div>
-      
-      <div class="w-full h-full shadow-2xl border border-slate-800 relative group flex items-center justify-center iframe-crop-container shadow-sky-900/10">
-        
-        <!-- Estado Inicial (Antes de selecionar um vídeo) -->
-        <div id="initialState" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center z-10 transition-opacity duration-300">
-          <svg class="w-20 h-20 text-slate-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span class="text-slate-500 font-semibold text-lg tracking-wider">Selecione um episódio ao lado</span>
+    <!-- Cabeçalho (Título e Data/Hora) -->
+    <header class="header-area">
+        <h1 id="videoTitle" class="text-3xl font-bold tracking-wide text-gray-100 drop-shadow-md">
+            Carregando título...
+        </h1>
+        <div id="clockDisplay" class="text-2xl font-semibold text-gray-300 drop-shadow-md tracking-wider">
+            --/--/---- --:--
         </div>
+    </header>
 
-        <!-- Iframe Otimizado do Google Drive -->
-        <iframe 
-          id="tvPlayer" 
-          allow="autoplay; fullscreen"
-          style="display: none;">
-        </iframe>
-      </div>
-    </section>
+    <!-- Área de Reprodução de Vídeo -->
+    <main class="video-area">
+        <!-- Adicionado autoplay e muted. O muted é vital porque navegadores bloqueiam autoplay com som sem interação prévia -->
+        <video id="tvPlayer" autoplay muted playsinline>
+            Seu navegador não suporta a tag de vídeo.
+        </video>
+    </main>
 
-    <!-- Playlist / Grid de Vídeos -->
-    <section class="flex-1 flex flex-col bg-slate-900/40 rounded-3xl p-6 border border-slate-800/50 min-h-0">
-      <h2 class="text-2xl font-bold text-slate-200 mb-6 flex items-center space-x-3">
-        <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-        <span>Sua Biblioteca</span>
-      </h2>
-      
-      <div id="playlistGrid" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-4 pb-10">
-        <!-- Cards gerados dinamicamente via JS -->
-      </div>
-    </section>
-  </main>
+    <script>
+        // Lista de vídeos convertidos para link de download direto do Drive
+        // Formato original: /file/d/ID/view
+        // Formato direto: /uc?export=download&id=ID
+        const playlist = [
+            {
+                title: "Active_Drop",
+                url: "https://drive.google.com/uc?export=download&id=1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD"
+            },
+            {
+                title: "V1_ESP",
+                url: "https://drive.google.com/uc?export=download&id=14G5kGznZv0aabzoAykNoUIeWL3LB_vFW"
+            },
+            {
+                title: "V2_ESP",
+                url: "https://drive.google.com/uc?export=download&id=1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb"
+            },
+            {
+                title: "V3_ESP",
+                url: "https://drive.google.com/uc?export=download&id=1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y"
+            }
+        ];
 
-  <script>
-    // A SUA LISTA OFICIAL DE VÍDEOS
-    const driveVideos = [
-      {
-        title: "Active_Drop",
-        id: "1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD",
-        thumbnailText: "01",
-        desc: "Google Drive"
-      },
-      {
-        title: "V1_ESP",
-        id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW",
-        thumbnailText: "02",
-        desc: "Google Drive"
-      },
-      {
-        title: "V2_ESP",
-        id: "1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb",
-        thumbnailText: "03",
-        desc: "Google Drive"
-      },
-      {
-        title: "V3_ESP",
-        id: "1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y",
-        thumbnailText: "04",
-        desc: "Google Drive"
-      }
-    ];
-
-    let currentIndex = -1;
-    
-    const player = document.getElementById('tvPlayer');
-    const initialState = document.getElementById('initialState');
-    const playlistGrid = document.getElementById('playlistGrid');
-    const nowPlayingTitle = document.getElementById('nowPlayingTitle');
-
-    // Inicializa os botões da lista
-    function renderPlaylist() {
-      playlistGrid.innerHTML = '';
-      
-      driveVideos.forEach((vid, index) => {
-        const card = document.createElement('button');
-        card.className = 'tv-focusable flex items-center text-left bg-slate-800/80 rounded-2xl p-4 gap-5 w-full cursor-pointer overflow-hidden border border-transparent';
-        card.setAttribute('tabindex', '0');
+        let currentIndex = 0;
         
-        card.innerHTML = `
-          <div class="relative w-24 h-16 sm:w-28 sm:h-20 flex-shrink-0 bg-slate-900 rounded-xl flex items-center justify-center border border-slate-700/50 shadow-inner overflow-hidden">
-            <span class="text-2xl font-black text-slate-700">${vid.thumbnailText}</span>
-            <div class="status-badge absolute inset-0 bg-sky-500/20 border-2 border-sky-500 rounded-xl hidden items-center justify-center">
-              <svg class="w-8 h-8 text-sky-400 drop-shadow-md" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-            </div>
-          </div>
-          <div class="flex flex-col flex-1 overflow-hidden">
-            <h3 class="text-xl font-bold text-slate-100 truncate w-full">${vid.title}</h3>
-            <p class="text-sm text-slate-400 mt-1 truncate w-full" id="status-text-${index}">${vid.desc}</p>
-          </div>
-        `;
+        // Elementos do DOM
+        const player = document.getElementById('tvPlayer');
+        const titleDisplay = document.getElementById('videoTitle');
+        const clockDisplay = document.getElementById('clockDisplay');
 
-        card.addEventListener('click', () => loadAndPlay(index));
+        // Função para atualizar o relógio na tela
+        function updateClock() {
+            const now = new Date();
+            
+            // Formatando a data (Ex: 23 de Set)
+            const optionsDate = { day: '2-digit', month: 'short', year: 'numeric' };
+            let dateStr = now.toLocaleDateString('pt-BR', optionsDate);
+            dateStr = dateStr.replace('.', ''); // Remove o ponto do mês se houver
+            
+            // Formatando a hora (Ex: 14:30:00)
+            const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const timeStr = now.toLocaleTimeString('pt-BR', optionsTime);
+
+            clockDisplay.textContent = `${dateStr} - ${timeStr}`;
+        }
         
-        // Se apertar OK / Enter no controle da TV
-        card.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            loadAndPlay(index);
-          }
+        // Inicia o relógio imediatamente e atualiza a cada segundo
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Função para carregar e iniciar um vídeo específico
+        function loadVideo(index) {
+            // Verifica limites da lista (Loop)
+            if (index >= playlist.length) {
+                currentIndex = 0; // Volta pro começo se passou do fim
+            } else if (index < 0) {
+                currentIndex = playlist.length - 1; // Vai pro último se retrocedeu do primeiro
+            } else {
+                currentIndex = index;
+            }
+
+            const videoData = playlist[currentIndex];
+            
+            // Atualiza Interface
+            titleDisplay.textContent = videoData.title;
+            
+            // Atualiza e Toca Vídeo
+            player.src = videoData.url;
+            
+            // Tratamento de erro caso o Drive bloqueie o carregamento
+            player.play().catch(error => {
+                console.warn("Autoplay impedido ou erro de carregamento:", error);
+                // Você pode querer exibir uma mensagem na tela se falhar muito
+                // titleDisplay.textContent = "Erro ao reproduzir. Aperte play.";
+            });
+        }
+
+        // Evento: Quando o vídeo atual terminar, pula para o próximo sozinho
+        player.addEventListener('ended', () => {
+            loadVideo(currentIndex + 1);
         });
 
-        playlistGrid.appendChild(card);
-      });
-      
-      updateHighlightUI();
-    }
+        // Controle por Teclado (Simulando controle remoto da TV)
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight' || event.key === 'MediaTrackNext') {
+                // Seta Direita: Próximo vídeo
+                loadVideo(currentIndex + 1);
+            } else if (event.key === 'ArrowLeft' || event.key === 'MediaTrackPrevious') {
+                // Seta Esquerda: Vídeo anterior
+                loadVideo(currentIndex - 1);
+            } else if (event.key === ' ' || event.key === 'Enter') {
+                // Espaço ou Enter: Pausar/Despausar
+                if (player.paused) {
+                    player.play();
+                } else {
+                    player.pause();
+                }
+            } else if (event.key === 'ArrowUp') {
+                // Seta Cima: Ativar som (muitos navegadores exigem interação para liberar o som)
+                player.muted = false;
+                titleDisplay.textContent = videoData.title + " (Som Ativado)";
+                setTimeout(() => { titleDisplay.textContent = playlist[currentIndex].title; }, 2000);
+            } else if (event.key === 'ArrowDown') {
+                // Seta Baixo: Mudar
+                player.muted = true;
+            }
+        });
 
-    // Gerencia as cores e o botão de "play" ativado
-    function updateHighlightUI() {
-      const cards = playlistGrid.querySelectorAll('button');
-      
-      cards.forEach((card, idx) => {
-        const badge = card.querySelector('.status-badge');
-        const statusText = document.getElementById(`status-text-${idx}`);
-        
-        if (idx === currentIndex) {
-          card.classList.add('border-sky-500', 'bg-slate-800');
-          card.classList.remove('border-transparent', 'bg-slate-800/80');
-          badge.classList.remove('hidden');
-          badge.classList.add('flex');
-          if(statusText) statusText.textContent = "▶ Assistindo agora";
-          statusText.classList.add('text-sky-400', 'font-semibold');
-          statusText.classList.remove('text-slate-400');
-        } else {
-          card.classList.remove('border-sky-500', 'bg-slate-800');
-          card.classList.add('border-transparent', 'bg-slate-800/80');
-          badge.classList.add('hidden');
-          badge.classList.remove('flex');
-          if(statusText) statusText.textContent = driveVideos[idx].desc;
-          statusText.classList.remove('text-sky-400', 'font-semibold');
-          statusText.classList.add('text-slate-400');
-        }
-      });
-    }
-
-    // Carrega o vídeo no iframe forçando o Autoplay
-    function loadAndPlay(index) {
-      if (index < 0 || index >= driveVideos.length) return;
-      
-      currentIndex = index;
-      const targetVideo = driveVideos[currentIndex];
-      
-      // Esconde aviso inicial e mostra o player
-      initialState.style.display = 'none';
-      player.style.display = 'block';
-      
-      // Atualiza o Título bonitão em cima do vídeo
-      nowPlayingTitle.textContent = targetVideo.title;
-      nowPlayingTitle.style.opacity = '1';
-
-      // Monta a URL de Preview do Drive (que funciona 100%), adicionando autoplay=1
-      const embedUrl = `https://drive.google.com/file/d/${targetVideo.id}/preview?autoplay=1`;
-      
-      // Dá o play no iframe
-      player.src = embedUrl;
-      
-      updateHighlightUI();
-      
-      // Força o foco para dentro do iframe para que o usuário consiga pausar/dar tela cheia com o controle
-      setTimeout(() => {
-        player.focus();
-      }, 500);
-    }
-
-    // Controle inteligente de navegação via teclado / controle remoto
-    document.addEventListener('keydown', (e) => {
-      const focusables = Array.from(document.querySelectorAll('.tv-focusable'));
-      if (focusables.length === 0) return;
-
-      const activeElement = document.activeElement;
-      let currentIndexFocus = focusables.indexOf(activeElement);
-
-      switch (e.key) {
-        // Navega para baixo
-        case 'ArrowDown':
-        case 'ArrowRight':
-          e.preventDefault();
-          if (currentIndexFocus === -1) {
-             focusables[0].focus(); 
-          } else if (currentIndexFocus < focusables.length - 1) {
-            focusables[currentIndexFocus + 1].focus(); 
-          }
-          break;
-          
-        // Navega para cima
-        case 'ArrowUp':
-        case 'ArrowLeft':
-          e.preventDefault();
-          if (currentIndexFocus > 0) {
-            focusables[currentIndexFocus - 1].focus(); 
-          }
-          break;
-      }
-    });
-
-    // Inicia a aplicação
-    window.addEventListener('DOMContentLoaded', () => {
-      renderPlaylist();
-      
-      // Coloca o foco automático no primeiro item da lista para usar o controle remoto direto
-      setTimeout(() => {
-        const firstCard = playlistGrid.querySelector('.tv-focusable');
-        if (firstCard) firstCard.focus();
-      }, 300);
-    });
-  </script>
+        // Iniciar o painel assim que a página carregar
+        window.onload = () => {
+            loadVideo(currentIndex);
+        };
+    </script>
 </body>
 </html>
