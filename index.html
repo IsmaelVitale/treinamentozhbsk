@@ -63,8 +63,7 @@
             align-items: center;
             justify-content: space-between;
 
-            padding:
-                0 2vw;
+            padding: 0 2vw;
 
             background:
                 linear-gradient(
@@ -151,19 +150,72 @@
         }
 
 
-        #player {
+        #playerContainer {
+
+            position: absolute;
+
+            inset: 0;
 
             width: 100%;
             height: 100%;
+
+            background: #000;
         }
 
 
-        #player iframe {
+        #playerContainer iframe {
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
 
             width: 100% !important;
             height: 100% !important;
 
-            border: 0 !important;
+            border: 0;
+
+            display: block;
+        }
+
+
+        /* =====================================================
+           STATUS
+        ===================================================== */
+
+        #status {
+
+            position: fixed;
+
+            left: 50%;
+            top: 50%;
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            z-index: 200;
+
+            display: none;
+
+            padding:
+                18px 28px;
+
+            border-radius: 10px;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .85
+                );
+
+            text-align: center;
+
+            font-size: 20px;
         }
 
 
@@ -231,43 +283,6 @@
         }
 
 
-        /* =====================================================
-           STATUS
-        ===================================================== */
-
-        #status {
-
-            position: fixed;
-
-            left: 50%;
-            top: 50%;
-
-            transform:
-                translate(
-                    -50%,
-                    -50%
-                );
-
-            z-index: 200;
-
-            display: none;
-
-            padding:
-                18px 28px;
-
-            border-radius: 10px;
-
-            background:
-                rgba(
-                    0,
-                    0,
-                    0,
-                    .85
-                );
-
-            text-align: center;
-        }
-
     </style>
 
 </head>
@@ -286,6 +301,7 @@
             Painel TV
         </h1>
 
+
         <div id="clockDisplay">
             --/--/---- --:--:--
         </div>
@@ -299,7 +315,7 @@
 
     <main class="video-area">
 
-        <div id="player"></div>
+        <div id="playerContainer"></div>
 
     </main>
 
@@ -309,9 +325,7 @@
     ===================================================== -->
 
     <div id="status">
-
         Carregando vídeo...
-
     </div>
 
 
@@ -336,7 +350,7 @@
 
 
     <!-- =====================================================
-         YOUTUBE API
+         API YOUTUBE
     ===================================================== -->
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -387,6 +401,8 @@
 
         let changing = false;
 
+        let youtubeApiReady = false;
+
 
         /* =====================================================
            ELEMENTOS
@@ -397,15 +413,18 @@
                 "videoTitle"
             );
 
+
         const clock =
             document.getElementById(
                 "clockDisplay"
             );
 
+
         const overlay =
             document.getElementById(
                 "startOverlay"
             );
+
 
         const status =
             document.getElementById(
@@ -413,96 +432,246 @@
             );
 
 
+        const playerContainer =
+            document.getElementById(
+                "playerContainer"
+            );
+
+
         /* =====================================================
-           YOUTUBE API
+           API YOUTUBE PRONTA
         ===================================================== */
 
         function onYouTubeIframeAPIReady() {
 
-            createPlayer();
+            youtubeApiReady = true;
+
+            console.log(
+                "YouTube IFrame API carregada."
+            );
 
         }
 
 
         /* =====================================================
-           CRIA PLAYER
+           MONTA URL DO YOUTUBE
         ===================================================== */
 
-        function createPlayer() {
+        function buildYouTubeURL(index) {
 
-            player =
-                new YT.Player(
-                    "player",
-                    {
+            const current =
+                playlist[index].id;
 
-                        width:
-                            "100%",
 
-                        height:
-                            "100%",
+            /*
+             * Os vídeos seguintes entram
+             * na playlist do próprio YouTube.
+             *
+             * O vídeo atual fica no caminho
+             * /embed/ID
+             */
 
-                        videoId:
-                            playlist[0].id,
+            const followingVideos = [];
 
-                        playerVars: {
 
-                            /*
-                             * Começa automaticamente quando
-                             * liberado pelo usuário.
-                             */
-                            autoplay: 1,
+            for (
+                let i = 1;
+                i < playlist.length;
+                i++
+            ) {
 
-                            /*
-                             * REMOVE CONTROLES.
-                             */
-                            controls: 0,
+                const nextIndex =
+                    (index + i) %
+                    playlist.length;
 
-                            /*
-                             * Evita teclado dentro do player.
-                             */
-                            disablekb: 1,
 
-                            /*
-                             * Não mostrar fullscreen
-                             * do player.
-                             */
-                            fs: 0,
+                followingVideos.push(
+                    playlist[nextIndex].id
+                );
 
-                            /*
-                             * Reprodução inline.
-                             */
-                            playsinline: 1,
+            }
 
-                            /*
-                             * Reduz vídeos relacionados.
-                             */
-                            rel: 0,
 
-                            /*
-                             * Não iniciar silenciado.
-                             *
-                             * O clique do usuário no painel
-                             * será usado para liberar o áudio.
-                             */
-                            mute: 0
+            const params = new URLSearchParams({
 
-                        },
+                autoplay: "1",
 
-                        events: {
+                controls: "0",
 
-                            onReady:
-                                onPlayerReady,
+                disablekb: "1",
 
-                            onStateChange:
-                                onPlayerStateChange,
+                fs: "0",
 
-                            onError:
-                                onPlayerError
+                playsinline: "1",
+
+                rel: "0",
+
+                loop: "1",
+
+                mute: "0",
+
+                playlist:
+                    followingVideos.join(","),
+
+                enablejsapi: "1"
+
+            });
+
+
+            /*
+             * Se estiver hospedado em HTTP/HTTPS,
+             * envia o origin para a API.
+             *
+             * Em arquivo local (file://), não
+             * adicionamos origin.
+             */
+
+            if (
+                location.protocol === "http:" ||
+                location.protocol === "https:"
+            ) {
+
+                params.set(
+                    "origin",
+                    location.origin
+                );
+
+            }
+
+
+            return (
+                "https://www.youtube.com/embed/" +
+                current +
+                "?" +
+                params.toString()
+            );
+
+        }
+
+
+        /* =====================================================
+           CRIA IFRAME
+        ===================================================== */
+
+        function createVideoIframe() {
+
+            playerReady = false;
+
+
+            playerContainer.innerHTML = "";
+
+
+            const iframe =
+                document.createElement(
+                    "iframe"
+                );
+
+
+            iframe.id =
+                "youtubePlayer";
+
+
+            iframe.src =
+                buildYouTubeURL(
+                    currentIndex
+                );
+
+
+            iframe.title =
+                "Painel TV";
+
+
+            iframe.allow =
+                "autoplay; encrypted-media; fullscreen; picture-in-picture";
+
+
+            iframe.allowFullscreen =
+                true;
+
+
+            iframe.setAttribute(
+                "frameborder",
+                "0"
+            );
+
+
+            iframe.setAttribute(
+                "referrerpolicy",
+                "strict-origin-when-cross-origin"
+            );
+
+
+            playerContainer.appendChild(
+                iframe
+            );
+
+
+            /*
+             * O iframe já é o player funcional.
+             *
+             * Agora tentamos conectar a API
+             * a ele para obter controle avançado.
+             */
+
+            if (youtubeApiReady) {
+
+                attachYouTubeAPI(
+                    iframe
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           CONECTA API AO IFRAME JÁ EXISTENTE
+        ===================================================== */
+
+        function attachYouTubeAPI(
+            iframe
+        ) {
+
+            try {
+
+                player =
+                    new YT.Player(
+                        iframe,
+                        {
+
+                            events: {
+
+                                onReady:
+                                    onPlayerReady,
+
+                                onStateChange:
+                                    onPlayerStateChange,
+
+                                onError:
+                                    onPlayerError
+
+                            }
 
                         }
+                    );
 
-                    }
+            } catch (error) {
+
+                console.warn(
+                    "Não foi possível conectar a API do YouTube.",
+                    error
                 );
+
+                /*
+                 * Isso NÃO impede o vídeo.
+                 *
+                 * O iframe continua funcionando
+                 * diretamente.
+                 */
+
+                player = null;
+
+            }
 
         }
 
@@ -516,28 +685,33 @@
             playerReady = true;
 
 
-            /*
-             * Volume inicial.
-             */
-
-            player.setVolume(100);
-
-
-            /*
-             * Atualiza título.
-             */
-
             updateTitle();
 
 
+            hideStatus();
+
+
             /*
-             * Só toca depois que o usuário
-             * iniciar o painel.
+             * O iframe já recebeu autoplay=1.
+             *
+             * Mesmo assim tentamos garantir
+             * reprodução e volume.
              */
 
-            if (panelStarted) {
+            try {
 
-                startVideo();
+                player.unMute();
+
+                player.setVolume(100);
+
+                player.playVideo();
+
+            } catch (error) {
+
+                console.log(
+                    "Comandos iniciais não disponíveis.",
+                    error
+                );
 
             }
 
@@ -567,7 +741,19 @@
 
 
             /*
-             * Tenta fullscreen.
+             * Mostra status enquanto
+             * o iframe é carregado.
+             */
+
+            showStatus(
+                "Carregando vídeo..."
+            );
+
+
+            /*
+             * Tenta colocar em fullscreen.
+             *
+             * Falha não impede o funcionamento.
              */
 
             try {
@@ -593,85 +779,45 @@
 
 
             /*
-             * Player já pronto?
+             * CRIA O IFRAME SOMENTE AGORA.
+             *
+             * Esse é o ponto principal da correção.
              */
 
-            if (playerReady) {
+            createVideoIframe();
 
-                startVideo();
-
-            }
-
-        }
-
-
-        /* =====================================================
-           COMEÇA VÍDEO
-        ===================================================== */
-
-        function startVideo() {
-
-            if (!playerReady) {
-                return;
-            }
-
-
-            /*
-             * Título do vídeo atual.
-             */
 
             updateTitle();
 
 
             /*
-             * Garante volume.
+             * Fallback:
+             *
+             * Se a API não conectar por alguma
+             * particularidade do navegador da TV,
+             * o iframe continua sendo reproduzido.
              */
 
-            player.unMute();
+            setTimeout(
+                () => {
 
-            player.setVolume(100);
+                    hideStatus();
 
-
-            /*
-             * Carrega vídeo atual.
-             */
-
-            player.loadVideoById(
-                playlist[currentIndex].id
+                },
+                5000
             );
-
-
-            /*
-             * Inicia.
-             */
-
-            player.playVideo();
 
         }
 
 
         /* =====================================================
-           MUDANÇA DE ESTADO
+           ESTADO DO PLAYER
         ===================================================== */
 
         function onPlayerStateChange(event) {
 
             /*
-             * Vídeo terminou.
-             */
-
-            if (
-                event.data ===
-                YT.PlayerState.ENDED
-            ) {
-
-                nextVideo();
-
-            }
-
-
-            /*
-             * Começou a tocar.
+             * PLAYING
              */
 
             if (
@@ -679,20 +825,112 @@
                 YT.PlayerState.PLAYING
             ) {
 
-                /*
-                 * Garante som.
-                 */
-
-                player.unMute();
-
-                player.setVolume(100);
+                hideStatus();
 
 
                 /*
-                 * Atualiza título.
+                 * Descobre qual vídeo da playlist
+                 * o YouTube está executando.
                  */
 
-                updateTitle();
+                try {
+
+                    const playlistIndex =
+                        player.getPlaylistIndex();
+
+
+                    if (
+                        typeof playlistIndex ===
+                        "number" &&
+                        playlistIndex >= 0
+                    ) {
+
+                        currentIndex =
+                            playlistIndex;
+
+                        updateTitle();
+
+                    }
+
+                } catch (error) {
+
+                    console.log(
+                        "Não foi possível obter índice.",
+                        error
+                    );
+
+                }
+
+
+                /*
+                 * Garante o som.
+                 */
+
+                try {
+
+                    player.unMute();
+
+                    player.setVolume(100);
+
+                } catch (error) {
+
+                    console.log(
+                        "Não foi possível ajustar volume.",
+                        error
+                    );
+
+                }
+
+            }
+
+
+            /*
+             * BUFFERING
+             */
+
+            if (
+                event.data ===
+                YT.PlayerState.BUFFERING
+            ) {
+
+                showStatus(
+                    "Carregando vídeo..."
+                );
+
+            }
+
+
+            /*
+             * CUED
+             */
+
+            if (
+                event.data ===
+                YT.PlayerState.CUED
+            ) {
+
+                hideStatus();
+
+            }
+
+
+            /*
+             * ENDED
+             *
+             * Normalmente não precisaremos
+             * tratar aqui porque o próprio
+             * playlist + loop do YouTube
+             * fará a sequência.
+             */
+
+            if (
+                event.data ===
+                YT.PlayerState.ENDED
+            ) {
+
+                console.log(
+                    "Playlist chegou ao fim."
+                );
 
             }
 
@@ -705,6 +943,11 @@
 
         function nextVideo() {
 
+            if (!panelStarted) {
+                return;
+            }
+
+
             if (changing) {
                 return;
             }
@@ -715,10 +958,6 @@
 
             currentIndex++;
 
-
-            /*
-             * Loop infinito.
-             */
 
             if (
                 currentIndex >=
@@ -734,28 +973,52 @@
 
 
             /*
-             * Pequena pausa técnica apenas para
-             * o YouTube processar a troca.
-             *
-             * NÃO é espera entre vídeos.
+             * Se a API estiver funcionando,
+             * usa a troca interna do YouTube.
              */
 
-            player.loadVideoById(
-                playlist[currentIndex].id
-            );
+            if (
+                playerReady &&
+                player
+            ) {
+
+                try {
+
+                    player.playVideoAt(
+                        currentIndex
+                    );
 
 
-            player.playVideo();
+                    setTimeout(
+                        () => {
+
+                            changing = false;
+
+                        },
+                        700
+                    );
 
 
-            setTimeout(
-                () => {
+                    return;
 
-                    changing = false;
+                } catch (error) {
 
-                },
-                300
-            );
+                    console.warn(
+                        "Falha no playVideoAt.",
+                        error
+                    );
+
+                }
+
+            }
+
+
+            /*
+             * Fallback:
+             * recria o iframe diretamente.
+             */
+
+            recreateIframe();
 
         }
 
@@ -765,6 +1028,11 @@
         ===================================================== */
 
         function previousVideo() {
+
+            if (!panelStarted) {
+                return;
+            }
+
 
             if (changing) {
                 return;
@@ -790,21 +1058,51 @@
             updateTitle();
 
 
-            player.loadVideoById(
-                playlist[currentIndex].id
+            /*
+             * A API não possui uma navegação
+             * anterior realmente confiável em
+             * todos os ambientes.
+             *
+             * Então reconstruímos o iframe.
+             */
+
+            recreateIframe();
+
+        }
+
+
+        /* =====================================================
+           RECRIA IFRAME
+        ===================================================== */
+
+        function recreateIframe() {
+
+            player = null;
+
+            playerReady = false;
+
+
+            showStatus(
+                "Carregando vídeo..."
             );
 
 
-            player.playVideo();
+            createVideoIframe();
+
+
+            updateTitle();
 
 
             setTimeout(
                 () => {
 
+                    hideStatus();
+
+
                     changing = false;
 
                 },
-                300
+                1200
             );
 
         }
@@ -845,8 +1143,33 @@
                     nextVideo();
 
                 },
-                1000
+                1500
             );
+
+        }
+
+
+        /* =====================================================
+           STATUS
+        ===================================================== */
+
+        function showStatus(
+            message
+        ) {
+
+            status.textContent =
+                message;
+
+            status.style.display =
+                "block";
+
+        }
+
+
+        function hideStatus() {
+
+            status.style.display =
+                "none";
 
         }
 
@@ -866,14 +1189,9 @@
                     .toLocaleDateString(
                         "pt-BR",
                         {
-                            day:
-                                "2-digit",
-
-                            month:
-                                "short",
-
-                            year:
-                                "numeric"
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric"
                         }
                     )
                     .replace(
@@ -887,14 +1205,9 @@
                     .toLocaleTimeString(
                         "pt-BR",
                         {
-                            hour:
-                                "2-digit",
-
-                            minute:
-                                "2-digit",
-
-                            second:
-                                "2-digit"
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit"
                         }
                     );
 
@@ -930,7 +1243,8 @@
                     !panelStarted &&
                     (
                         event.key === "Enter" ||
-                        event.key === " "
+                        event.key === " " ||
+                        event.key === "NumpadEnter"
                     )
                 ) {
 
@@ -949,6 +1263,7 @@
 
                 if (
                     event.key === "ArrowRight" ||
+                    event.key === "PageDown" ||
                     event.key === "MediaTrackNext"
                 ) {
 
@@ -967,6 +1282,7 @@
 
                 if (
                     event.key === "ArrowLeft" ||
+                    event.key === "PageUp" ||
                     event.key === "MediaTrackPrevious"
                 ) {
 
@@ -999,10 +1315,9 @@
                 event.preventDefault()
         );
 
+
     </script>
 
 </body>
 
 </html>
-
-Eu queria poder alternar entre os videos além do loop 
