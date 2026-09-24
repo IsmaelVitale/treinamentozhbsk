@@ -62,43 +62,60 @@
         </div>
     </header>
 
+    <!-- Tela de Início para liberar permissões do navegador contra o bloqueio de Autoplay -->
+    <div id="startOverlay" class="absolute inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center cursor-pointer" onclick="startPanel()">
+        <h2 class="text-4xl text-white font-bold mb-4">Painel TV Preparado</h2>
+        <p class="text-gray-400 text-xl animate-pulse">Clique aqui ou aperte OK no controle para iniciar a reprodução</p>
+    </div>
+
     <!-- Área de Reprodução de Vídeo -->
-    <main class="video-area">
-        <!-- Adicionado autoplay e muted. O muted é vital porque navegadores bloqueiam autoplay com som sem interação prévia -->
-        <video id="tvPlayer" autoplay muted playsinline>
-            Seu navegador não suporta a tag de vídeo.
-        </video>
+    <main class="video-area relative">
+        <!-- Mudamos para iframe para evitar os bloqueios de segurança do servidor do Drive -->
+        <!-- pointer-events: none impede que o foco do teclado vá pro Drive, mantendo nosso controle funcionando -->
+        <iframe id="tvPlayer" allow="autoplay; fullscreen" style="width: 100%; height: 100%; border: none; pointer-events: none;"></iframe>
     </main>
 
     <script>
-        // Lista de vídeos convertidos para link de download direto do Drive
-        // Formato original: /file/d/ID/view
-        // Formato direto: /uc?export=download&id=ID
+        // O player do Drive requer que informemos o tempo de cada vídeo para a troca automática
         const playlist = [
             {
                 title: "Active_Drop",
-                url: "https://drive.google.com/uc?export=download&id=1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD"
+                id: "1h3GjUiuCI2NcLELuc25j5qiWGma2QwmD",
+                duration: 30 // ALERTA: Digite aqui o tempo exato deste vídeo em segundos!
             },
             {
                 title: "V1_ESP",
-                url: "https://drive.google.com/uc?export=download&id=14G5kGznZv0aabzoAykNoUIeWL3LB_vFW"
+                id: "14G5kGznZv0aabzoAykNoUIeWL3LB_vFW",
+                duration: 30 // Mude este tempo para os segundos reais do vídeo
             },
             {
                 title: "V2_ESP",
-                url: "https://drive.google.com/uc?export=download&id=1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb"
+                id: "1TbgPAJxYMkncBKINiZJK59b1CvzzKnzb",
+                duration: 30 // Mude este tempo para os segundos reais do vídeo
             },
             {
                 title: "V3_ESP",
-                url: "https://drive.google.com/uc?export=download&id=1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y"
+                id: "1OJnPwDkvv8szslvi4c3x5lJ2YpdTyP3y",
+                duration: 30 // Mude este tempo para os segundos reais do vídeo
             }
         ];
 
         let currentIndex = 0;
+        let videoTimer; // Controlador de tempo do cronômetro
+        let isPanelActive = false; // Bloqueia a execução antes do clique inicial
         
         // Elementos do DOM
         const player = document.getElementById('tvPlayer');
         const titleDisplay = document.getElementById('videoTitle');
         const clockDisplay = document.getElementById('clockDisplay');
+        const overlay = document.getElementById('startOverlay');
+
+        // Função para iniciar o painel
+        function startPanel() {
+            overlay.style.display = 'none';
+            isPanelActive = true;
+            loadVideo(currentIndex);
+        }
 
         // Função para atualizar o relógio na tela
         function updateClock() {
@@ -122,66 +139,50 @@
 
         // Função para carregar e iniciar um vídeo específico
         function loadVideo(index) {
-            // Verifica limites da lista (Loop)
+            if (!isPanelActive) return; // Não faz nada se ainda não iniciou a tela
+            
+            clearTimeout(videoTimer); // Limpa o cronômetro anterior para não pular vídeos rápido demais
+
+            // Verifica limites da lista (Loop Infinito)
             if (index >= playlist.length) {
-                currentIndex = 0; // Volta pro começo se passou do fim
+                currentIndex = 0;
             } else if (index < 0) {
-                currentIndex = playlist.length - 1; // Vai pro último se retrocedeu do primeiro
+                currentIndex = playlist.length - 1;
             } else {
                 currentIndex = index;
             }
 
             const videoData = playlist[currentIndex];
             
-            // Atualiza Interface
+            // Atualiza o texto da Interface
             titleDisplay.textContent = videoData.title;
             
-            // Atualiza e Toca Vídeo
-            player.src = videoData.url;
+            // Usa o link de preview do Iframe do Google Drive
+            player.src = `https://drive.google.com/file/d/${videoData.id}/preview?autoplay=1&mute=1`;
             
-            // Tratamento de erro caso o Drive bloqueie o carregamento
-            player.play().catch(error => {
-                console.warn("Autoplay impedido ou erro de carregamento:", error);
-                // Você pode querer exibir uma mensagem na tela se falhar muito
-                // titleDisplay.textContent = "Erro ao reproduzir. Aperte play.";
-            });
+            // Define o cronômetro para pular de vídeo baseado no tempo cadastrado lá em cima
+            videoTimer = setTimeout(() => {
+                loadVideo(currentIndex + 1);
+            }, videoData.duration * 1000); // Multiplica por 1000 para converter segundos em milissegundos
         }
-
-        // Evento: Quando o vídeo atual terminar, pula para o próximo sozinho
-        player.addEventListener('ended', () => {
-            loadVideo(currentIndex + 1);
-        });
 
         // Controle por Teclado (Simulando controle remoto da TV)
         window.addEventListener('keydown', (event) => {
+            // Permite iniciar a tela clicando ENTER ou ESPAÇO
+            if (!isPanelActive && (event.key === 'Enter' || event.key === ' ')) {
+                startPanel();
+                return;
+            }
+
             if (event.key === 'ArrowRight' || event.key === 'MediaTrackNext') {
-                // Seta Direita: Próximo vídeo
+                // Seta Direita: Próximo vídeo na hora
                 loadVideo(currentIndex + 1);
             } else if (event.key === 'ArrowLeft' || event.key === 'MediaTrackPrevious') {
-                // Seta Esquerda: Vídeo anterior
+                // Seta Esquerda: Vídeo anterior na hora
                 loadVideo(currentIndex - 1);
-            } else if (event.key === ' ' || event.key === 'Enter') {
-                // Espaço ou Enter: Pausar/Despausar
-                if (player.paused) {
-                    player.play();
-                } else {
-                    player.pause();
-                }
-            } else if (event.key === 'ArrowUp') {
-                // Seta Cima: Ativar som (muitos navegadores exigem interação para liberar o som)
-                player.muted = false;
-                titleDisplay.textContent = videoData.title + " (Som Ativado)";
-                setTimeout(() => { titleDisplay.textContent = playlist[currentIndex].title; }, 2000);
-            } else if (event.key === 'ArrowDown') {
-                // Seta Baixo: Mudar
-                player.muted = true;
             }
+            // Observação: Controle de volume foi removido porque o iframe oficial do Drive não permite mutar/desmutar via código.
         });
-
-        // Iniciar o painel assim que a página carregar
-        window.onload = () => {
-            loadVideo(currentIndex);
-        };
     </script>
 </body>
 </html>
