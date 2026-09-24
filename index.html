@@ -180,6 +180,188 @@
 
 
         /* =====================================================
+           BOTÕES DE NAVEGAÇÃO
+        ===================================================== */
+
+        #controls {
+
+            position: fixed;
+
+            left: 50%;
+            bottom: 2vh;
+
+            transform:
+                translateX(-50%);
+
+            width: 96vw;
+
+            z-index: 500;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 8px;
+
+            padding: 8px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .82
+                );
+
+            backdrop-filter:
+                blur(8px);
+
+            -webkit-backdrop-filter:
+                blur(8px);
+
+            border:
+                1px solid
+                rgba(255,255,255,.12);
+
+        }
+
+
+        .control-button {
+
+            flex: 1;
+
+            min-width: 0;
+
+            height:
+                clamp(
+                    42px,
+                    6vh,
+                    70px
+                );
+
+            padding:
+                0 clamp(
+                    8px,
+                    1vw,
+                    20px
+                );
+
+            border: 1px solid
+                rgba(255,255,255,.18);
+
+            border-radius: 10px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .10
+                );
+
+            color: #fff;
+
+            font-size:
+                clamp(
+                    11px,
+                    1.2vw,
+                    22px
+                );
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            white-space: nowrap;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            transition:
+                transform .12s ease,
+                background .12s ease,
+                border-color .12s ease;
+        }
+
+
+        .control-button:hover {
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .18
+                );
+
+            border-color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .35
+                );
+
+        }
+
+
+        .control-button:active {
+
+            transform:
+                scale(.96);
+
+        }
+
+
+        .control-button.active {
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .28
+                );
+
+            border-color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .75
+                );
+
+            box-shadow:
+                0 0 12px
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .15
+                );
+
+        }
+
+
+        .nav-button {
+
+            flex:
+                0 0 auto;
+
+            min-width:
+                clamp(
+                    90px,
+                    10vw,
+                    170px
+                );
+        }
+
+
+        /* =====================================================
            STATUS
         ===================================================== */
 
@@ -196,7 +378,7 @@
                     -50%
                 );
 
-            z-index: 200;
+            z-index: 600;
 
             display: none;
 
@@ -215,7 +397,12 @@
 
             text-align: center;
 
-            font-size: 20px;
+            font-size:
+                clamp(
+                    16px,
+                    1.5vw,
+                    24px
+                );
         }
 
 
@@ -321,6 +508,72 @@
 
 
     <!-- =====================================================
+         CONTROLES CLICÁVEIS
+    ===================================================== -->
+
+    <nav id="controls">
+
+        <button
+            class="control-button nav-button"
+            type="button"
+            onclick="previousVideo()"
+        >
+            ◀ Anterior
+        </button>
+
+
+        <button
+            class="control-button video-button"
+            type="button"
+            data-index="0"
+            onclick="selectVideo(0)"
+        >
+            Active_Drop
+        </button>
+
+
+        <button
+            class="control-button video-button"
+            type="button"
+            data-index="1"
+            onclick="selectVideo(1)"
+        >
+            V1
+        </button>
+
+
+        <button
+            class="control-button video-button"
+            type="button"
+            data-index="2"
+            onclick="selectVideo(2)"
+        >
+            V2
+        </button>
+
+
+        <button
+            class="control-button video-button"
+            type="button"
+            data-index="3"
+            onclick="selectVideo(3)"
+        >
+            V3
+        </button>
+
+
+        <button
+            class="control-button nav-button"
+            type="button"
+            onclick="nextVideo()"
+        >
+            Próximo ▶
+        </button>
+
+    </nav>
+
+
+    <!-- =====================================================
          STATUS
     ===================================================== -->
 
@@ -342,15 +595,16 @@
             Painel TV Preparado
         </h1>
 
+
         <p>
-            Clique aqui ou aperte OK no controle para iniciar
+            Clique aqui para iniciar
         </p>
 
     </div>
 
 
     <!-- =====================================================
-         API YOUTUBE
+         YOUTUBE IFRAME API
     ===================================================== -->
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -371,17 +625,17 @@
 
             {
                 id: "E2jAXTyP3pU",
-                title: "V1_ESP"
+                title: "V1"
             },
 
             {
                 id: "KaV5f_LuAOs",
-                title: "V2_ESP"
+                title: "V2"
             },
 
             {
                 id: "bTioQpmxjfI",
-                title: "V3_ESP"
+                title: "V3"
             }
 
         ];
@@ -395,13 +649,15 @@
 
         let playerReady = false;
 
+        let youtubeApiReady = false;
+
         let panelStarted = false;
 
         let currentIndex = 0;
 
-        let changing = false;
+        let currentSequence = [];
 
-        let youtubeApiReady = false;
+        let changing = false;
 
 
         /* =====================================================
@@ -438,8 +694,14 @@
             );
 
 
+        const videoButtons =
+            document.querySelectorAll(
+                ".video-button"
+            );
+
+
         /* =====================================================
-           API YOUTUBE PRONTA
+           YOUTUBE API PRONTA
         ===================================================== */
 
         function onYouTubeIframeAPIReady() {
@@ -450,85 +712,280 @@
                 "YouTube IFrame API carregada."
             );
 
+
+            /*
+             * O vídeo já pode ter sido criado
+             * diretamente como iframe.
+             *
+             * Agora apenas tentamos conectar
+             * a API ao iframe existente.
+             */
+
+            if (panelStarted) {
+
+                attachYouTubeAPI();
+
+            }
+
         }
 
 
         /* =====================================================
-           MONTA URL DO YOUTUBE
+           INICIAR PAINEL
         ===================================================== */
 
-        function buildYouTubeURL(index) {
+        async function startPanel() {
 
-            const current =
-                playlist[index].id;
+            if (panelStarted) {
+                return;
+            }
+
+
+            panelStarted = true;
+
+
+            overlay.style.display =
+                "none";
+
+
+            showStatus(
+                "Carregando vídeo..."
+            );
 
 
             /*
-             * Os vídeos seguintes entram
-             * na playlist do próprio YouTube.
+             * Fullscreen é opcional.
              *
-             * O vídeo atual fica no caminho
-             * /embed/ID
+             * Se a TCL não permitir,
+             * a página continua funcionando.
              */
 
-            const followingVideos = [];
+            try {
 
+                if (
+                    document.documentElement
+                        .requestFullscreen
+                ) {
 
-            for (
-                let i = 1;
-                i < playlist.length;
-                i++
-            ) {
+                    await
+                        document.documentElement
+                            .requestFullscreen();
 
-                const nextIndex =
-                    (index + i) %
-                    playlist.length;
+                }
 
+            } catch (error) {
 
-                followingVideos.push(
-                    playlist[nextIndex].id
+                console.log(
+                    "Fullscreen não disponível."
                 );
 
             }
 
 
-            const params = new URLSearchParams({
+            /*
+             * Começa sempre no Active_Drop.
+             */
 
-                autoplay: "1",
+            currentIndex = 0;
 
-                controls: "0",
 
-                disablekb: "1",
+            createIframe(
+                currentIndex
+            );
 
-                fs: "0",
 
-                playsinline: "1",
+            updateTitle();
 
-                rel: "0",
+            updateButtons();
 
-                loop: "1",
+        }
 
-                mute: "0",
 
-                playlist:
-                    followingVideos.join(","),
+        /* =====================================================
+           CRIAR URL DO IFRAME
+        ===================================================== */
 
-                enablejsapi: "1"
+        function buildYouTubeURL(
+            startIndex
+        ) {
 
-            });
+            currentSequence = [];
 
 
             /*
-             * Se estiver hospedado em HTTP/HTTPS,
-             * envia o origin para a API.
+             * Monta a ordem a partir do vídeo
+             * selecionado.
              *
-             * Em arquivo local (file://), não
-             * adicionamos origin.
+             * Exemplo:
+             *
+             * V2
+             * V3
+             * Active_Drop
+             * V1
+             */
+
+            for (
+                let i = 0;
+                i < playlist.length;
+                i++
+            ) {
+
+                currentSequence.push(
+                    (
+                        startIndex + i
+                    ) %
+                    playlist.length
+                );
+
+            }
+
+
+            const firstVideo =
+                playlist[
+                    currentSequence[0]
+                ].id;
+
+
+            const followingVideos =
+                currentSequence
+                    .slice(1)
+                    .map(
+                        index =>
+                            playlist[index].id
+                    );
+
+
+            const params =
+                new URLSearchParams();
+
+
+            /*
+             * Autoplay.
+             */
+
+            params.set(
+                "autoplay",
+                "1"
+            );
+
+
+            /*
+             * Sem controles internos
+             * do YouTube.
+             */
+
+            params.set(
+                "controls",
+                "0"
+            );
+
+
+            /*
+             * Sem teclado dentro do iframe.
+             */
+
+            params.set(
+                "disablekb",
+                "1"
+            );
+
+
+            /*
+             * Não mostrar botão fullscreen
+             * do próprio YouTube.
+             */
+
+            params.set(
+                "fs",
+                "0"
+            );
+
+
+            /*
+             * Reprodução inline.
+             */
+
+            params.set(
+                "playsinline",
+                "1"
+            );
+
+
+            /*
+             * Evita sair sugerindo vídeos
+             * aleatórios de outros canais.
+             */
+
+            params.set(
+                "rel",
+                "0"
+            );
+
+
+            /*
+             * Loop automático da sequência.
+             *
+             * O parâmetro playlist define
+             * quais vídeos vêm depois do primeiro.
+             */
+
+            params.set(
+                "loop",
+                "1"
+            );
+
+
+            /*
+             * Tentamos iniciar com som.
+             *
+             * Como o iframe é criado dentro
+             * da ação do botão "iniciar",
+             * há uma interação do usuário.
+             */
+
+            params.set(
+                "mute",
+                "0"
+            );
+
+
+            /*
+             * Permite conexão posterior
+             * da IFrame API.
+             */
+
+            params.set(
+                "enablejsapi",
+                "1"
+            );
+
+
+            /*
+             * Define a playlist.
              */
 
             if (
-                location.protocol === "http:" ||
-                location.protocol === "https:"
+                followingVideos.length > 0
+            ) {
+
+                params.set(
+                    "playlist",
+                    followingVideos.join(",")
+                );
+
+            }
+
+
+            /*
+             * Origin é recomendável quando
+             * a página é servida por HTTP/HTTPS.
+             */
+
+            if (
+                location.protocol ===
+                    "http:" ||
+                location.protocol ===
+                    "https:"
             ) {
 
                 params.set(
@@ -541,7 +998,7 @@
 
             return (
                 "https://www.youtube.com/embed/" +
-                current +
+                firstVideo +
                 "?" +
                 params.toString()
             );
@@ -550,15 +1007,20 @@
 
 
         /* =====================================================
-           CRIA IFRAME
+           CRIAR IFRAME
         ===================================================== */
 
-        function createVideoIframe() {
+        function createIframe(
+            startIndex
+        ) {
+
+            player = null;
 
             playerReady = false;
 
 
-            playerContainer.innerHTML = "";
+            playerContainer.innerHTML =
+                "";
 
 
             const iframe =
@@ -573,12 +1035,14 @@
 
             iframe.src =
                 buildYouTubeURL(
-                    currentIndex
+                    startIndex
                 );
 
 
             iframe.title =
-                "Painel TV";
+                playlist[
+                    startIndex
+                ].title;
 
 
             iframe.allow =
@@ -589,10 +1053,8 @@
                 true;
 
 
-            iframe.setAttribute(
-                "frameborder",
-                "0"
-            );
+            iframe.frameBorder =
+                "0";
 
 
             iframe.setAttribute(
@@ -607,16 +1069,42 @@
 
 
             /*
-             * O iframe já é o player funcional.
+             * Atualiza imediatamente.
              *
-             * Agora tentamos conectar a API
-             * a ele para obter controle avançado.
+             * Não dependemos do onReady
+             * para mostrar o título.
+             */
+
+            updateTitle();
+
+            updateButtons();
+
+
+            /*
+             * Esconde o "carregando" depois
+             * de alguns segundos.
+             */
+
+            setTimeout(
+                () => {
+
+                    hideStatus();
+
+                },
+                3500
+            );
+
+
+            /*
+             * Caso a API já esteja disponível,
+             * tenta conectar ao iframe.
              */
 
             if (youtubeApiReady) {
 
-                attachYouTubeAPI(
-                    iframe
+                setTimeout(
+                    attachYouTubeAPI,
+                    500
                 );
 
             }
@@ -625,12 +1113,31 @@
 
 
         /* =====================================================
-           CONECTA API AO IFRAME JÁ EXISTENTE
+           CONECTAR API AO IFRAME
         ===================================================== */
 
-        function attachYouTubeAPI(
-            iframe
-        ) {
+        function attachYouTubeAPI() {
+
+            if (!youtubeApiReady) {
+                return;
+            }
+
+
+            if (!panelStarted) {
+                return;
+            }
+
+
+            const iframe =
+                document.getElementById(
+                    "youtubePlayer"
+                );
+
+
+            if (!iframe) {
+                return;
+            }
+
 
             try {
 
@@ -657,17 +1164,17 @@
 
             } catch (error) {
 
+                /*
+                 * IMPORTANTE:
+                 *
+                 * Se a API da TCL falhar,
+                 * o iframe continua funcionando.
+                 */
+
                 console.warn(
-                    "Não foi possível conectar a API do YouTube.",
+                    "API YouTube indisponível; iframe continua normalmente.",
                     error
                 );
-
-                /*
-                 * Isso NÃO impede o vídeo.
-                 *
-                 * O iframe continua funcionando
-                 * diretamente.
-                 */
 
                 player = null;
 
@@ -680,36 +1187,37 @@
            PLAYER PRONTO
         ===================================================== */
 
-        function onPlayerReady() {
+        function onPlayerReady(
+            event
+        ) {
 
             playerReady = true;
-
-
-            updateTitle();
 
 
             hideStatus();
 
 
             /*
-             * O iframe já recebeu autoplay=1.
+             * O autoplay do iframe já foi solicitado.
              *
-             * Mesmo assim tentamos garantir
-             * reprodução e volume.
+             * Tentamos garantir a reprodução
+             * e o volume.
              */
 
             try {
 
-                player.unMute();
+                event.target.unMute();
 
-                player.setVolume(100);
+                event.target.setVolume(
+                    100
+                );
 
-                player.playVideo();
+                event.target.playVideo();
 
             } catch (error) {
 
                 console.log(
-                    "Comandos iniciais não disponíveis.",
+                    "Não foi possível controlar volume/play.",
                     error
                 );
 
@@ -719,105 +1227,15 @@
 
 
         /* =====================================================
-           INICIAR PAINEL
+           MUDANÇA DE ESTADO
         ===================================================== */
 
-        async function startPanel() {
-
-            if (panelStarted) {
-                return;
-            }
-
-
-            panelStarted = true;
-
+        function onPlayerStateChange(
+            event
+        ) {
 
             /*
-             * Remove tela inicial.
-             */
-
-            overlay.style.display =
-                "none";
-
-
-            /*
-             * Mostra status enquanto
-             * o iframe é carregado.
-             */
-
-            showStatus(
-                "Carregando vídeo..."
-            );
-
-
-            /*
-             * Tenta colocar em fullscreen.
-             *
-             * Falha não impede o funcionamento.
-             */
-
-            try {
-
-                if (
-                    document.documentElement
-                        .requestFullscreen
-                ) {
-
-                    await
-                        document.documentElement
-                            .requestFullscreen();
-
-                }
-
-            } catch (error) {
-
-                console.log(
-                    "Fullscreen não disponível."
-                );
-
-            }
-
-
-            /*
-             * CRIA O IFRAME SOMENTE AGORA.
-             *
-             * Esse é o ponto principal da correção.
-             */
-
-            createVideoIframe();
-
-
-            updateTitle();
-
-
-            /*
-             * Fallback:
-             *
-             * Se a API não conectar por alguma
-             * particularidade do navegador da TV,
-             * o iframe continua sendo reproduzido.
-             */
-
-            setTimeout(
-                () => {
-
-                    hideStatus();
-
-                },
-                5000
-            );
-
-        }
-
-
-        /* =====================================================
-           ESTADO DO PLAYER
-        ===================================================== */
-
-        function onPlayerStateChange(event) {
-
-            /*
-             * PLAYING
+             * Tocando.
              */
 
             if (
@@ -829,53 +1247,41 @@
 
 
                 /*
-                 * Descobre qual vídeo da playlist
-                 * o YouTube está executando.
+                 * Descobre qual posição da
+                 * sequência está sendo tocada.
                  */
 
                 try {
 
-                    const playlistIndex =
-                        player.getPlaylistIndex();
+                    const sequenceIndex =
+                        event.target
+                            .getPlaylistIndex();
 
 
                     if (
-                        typeof playlistIndex ===
-                        "number" &&
-                        playlistIndex >= 0
+                        typeof sequenceIndex ===
+                            "number" &&
+                        sequenceIndex >= 0 &&
+                        sequenceIndex <
+                            currentSequence.length
                     ) {
 
                         currentIndex =
-                            playlistIndex;
+                            currentSequence[
+                                sequenceIndex
+                            ];
+
 
                         updateTitle();
+
+                        updateButtons();
 
                     }
 
                 } catch (error) {
 
                     console.log(
-                        "Não foi possível obter índice.",
-                        error
-                    );
-
-                }
-
-
-                /*
-                 * Garante o som.
-                 */
-
-                try {
-
-                    player.unMute();
-
-                    player.setVolume(100);
-
-                } catch (error) {
-
-                    console.log(
-                        "Não foi possível ajustar volume.",
+                        "Não foi possível obter o índice do vídeo.",
                         error
                     );
 
@@ -885,7 +1291,7 @@
 
 
             /*
-             * BUFFERING
+             * Buffering.
              */
 
             if (
@@ -899,40 +1305,88 @@
 
             }
 
+        }
 
-            /*
-             * CUED
-             */
+
+        /* =====================================================
+           SELECIONAR VÍDEO
+        ===================================================== */
+
+        function selectVideo(
+            index
+        ) {
+
+            if (!panelStarted) {
+                return;
+            }
+
 
             if (
-                event.data ===
-                YT.PlayerState.CUED
+                index < 0 ||
+                index >= playlist.length
             ) {
 
-                hideStatus();
+                return;
 
             }
 
 
+            if (changing) {
+                return;
+            }
+
+
             /*
-             * ENDED
+             * Se já está no vídeo escolhido,
+             * não faz nada.
+             */
+
+            if (
+                index === currentIndex &&
+                playerReady
+            ) {
+
+                return;
+
+            }
+
+
+            changing = true;
+
+
+            currentIndex =
+                index;
+
+
+            updateTitle();
+
+            updateButtons();
+
+
+            /*
+             * Sempre reconstruímos o iframe.
              *
-             * Normalmente não precisaremos
-             * tratar aqui porque o próprio
-             * playlist + loop do YouTube
-             * fará a sequência.
+             * Isso evita depender de
+             * playVideoAt() na TCL.
+             *
+             * Dessa forma o mesmo mecanismo
+             * que já funcionou no iframe puro
+             * é utilizado para cada troca.
              */
 
-            if (
-                event.data ===
-                YT.PlayerState.ENDED
-            ) {
+            createIframe(
+                currentIndex
+            );
 
-                console.log(
-                    "Playlist chegou ao fim."
-                );
 
-            }
+            setTimeout(
+                () => {
+
+                    changing = false;
+
+                },
+                800
+            );
 
         }
 
@@ -953,72 +1407,23 @@
             }
 
 
-            changing = true;
-
-
-            currentIndex++;
+            let nextIndex =
+                currentIndex + 1;
 
 
             if (
-                currentIndex >=
+                nextIndex >=
                 playlist.length
             ) {
 
-                currentIndex = 0;
+                nextIndex = 0;
 
             }
 
 
-            updateTitle();
-
-
-            /*
-             * Se a API estiver funcionando,
-             * usa a troca interna do YouTube.
-             */
-
-            if (
-                playerReady &&
-                player
-            ) {
-
-                try {
-
-                    player.playVideoAt(
-                        currentIndex
-                    );
-
-
-                    setTimeout(
-                        () => {
-
-                            changing = false;
-
-                        },
-                        700
-                    );
-
-
-                    return;
-
-                } catch (error) {
-
-                    console.warn(
-                        "Falha no playVideoAt.",
-                        error
-                    );
-
-                }
-
-            }
-
-
-            /*
-             * Fallback:
-             * recria o iframe diretamente.
-             */
-
-            recreateIframe();
+            selectVideo(
+                nextIndex
+            );
 
         }
 
@@ -1039,93 +1444,74 @@
             }
 
 
-            changing = true;
-
-
-            currentIndex--;
+            let previousIndex =
+                currentIndex - 1;
 
 
             if (
-                currentIndex < 0
+                previousIndex < 0
             ) {
 
-                currentIndex =
+                previousIndex =
                     playlist.length - 1;
 
             }
 
 
-            updateTitle();
-
-
-            /*
-             * A API não possui uma navegação
-             * anterior realmente confiável em
-             * todos os ambientes.
-             *
-             * Então reconstruímos o iframe.
-             */
-
-            recreateIframe();
-
-        }
-
-
-        /* =====================================================
-           RECRIA IFRAME
-        ===================================================== */
-
-        function recreateIframe() {
-
-            player = null;
-
-            playerReady = false;
-
-
-            showStatus(
-                "Carregando vídeo..."
-            );
-
-
-            createVideoIframe();
-
-
-            updateTitle();
-
-
-            setTimeout(
-                () => {
-
-                    hideStatus();
-
-
-                    changing = false;
-
-                },
-                1200
+            selectVideo(
+                previousIndex
             );
 
         }
 
 
         /* =====================================================
-           TÍTULO
+           ATUALIZAR TÍTULO
         ===================================================== */
 
         function updateTitle() {
 
             title.textContent =
-                playlist[currentIndex]
-                    .title;
+                playlist[
+                    currentIndex
+                ].title;
 
         }
 
 
         /* =====================================================
-           ERRO
+           ATUALIZAR BOTÕES
         ===================================================== */
 
-        function onPlayerError(event) {
+        function updateButtons() {
+
+            videoButtons.forEach(
+                button => {
+
+                    const index =
+                        Number(
+                            button.dataset.index
+                        );
+
+
+                    button.classList.toggle(
+                        "active",
+                        index === currentIndex
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           ERRO DO YOUTUBE
+        ===================================================== */
+
+        function onPlayerError(
+            event
+        ) {
 
             console.error(
                 "Erro do YouTube:",
@@ -1134,13 +1520,22 @@
 
 
             /*
-             * Não deixa a TV parada.
+             * Tenta automaticamente o
+             * próximo vídeo caso algum
+             * conteúdo apresente erro.
              */
 
             setTimeout(
                 () => {
 
-                    nextVideo();
+                    if (
+                        panelStarted &&
+                        !changing
+                    ) {
+
+                        nextVideo();
+
+                    }
 
                 },
                 1500
@@ -1185,31 +1580,29 @@
 
 
             const date =
-                now
-                    .toLocaleDateString(
-                        "pt-BR",
-                        {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric"
-                        }
-                    )
-                    .replace(
-                        ".",
-                        ""
-                    );
+                now.toLocaleDateString(
+                    "pt-BR",
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    }
+                )
+                .replace(
+                    ".",
+                    ""
+                );
 
 
             const time =
-                now
-                    .toLocaleTimeString(
-                        "pt-BR",
-                        {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit"
-                        }
-                    );
+                now.toLocaleTimeString(
+                    "pt-BR",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
 
 
             clock.textContent =
@@ -1228,93 +1621,41 @@
 
 
         /* =====================================================
-           CONTROLE REMOTO
-        ===================================================== */
-
-        window.addEventListener(
-            "keydown",
-            event => {
-
-                /*
-                 * ENTER / OK
-                 */
-
-                if (
-                    !panelStarted &&
-                    (
-                        event.key === "Enter" ||
-                        event.key === " " ||
-                        event.key === "NumpadEnter"
-                    )
-                ) {
-
-                    event.preventDefault();
-
-                    startPanel();
-
-                    return;
-
-                }
-
-
-                /*
-                 * PRÓXIMO
-                 */
-
-                if (
-                    event.key === "ArrowRight" ||
-                    event.key === "PageDown" ||
-                    event.key === "MediaTrackNext"
-                ) {
-
-                    event.preventDefault();
-
-                    nextVideo();
-
-                    return;
-
-                }
-
-
-                /*
-                 * ANTERIOR
-                 */
-
-                if (
-                    event.key === "ArrowLeft" ||
-                    event.key === "PageUp" ||
-                    event.key === "MediaTrackPrevious"
-                ) {
-
-                    event.preventDefault();
-
-                    previousVideo();
-
-                    return;
-
-                }
-
-            }
-        );
-
-
-        /* =====================================================
            PROTEÇÕES
         ===================================================== */
 
         document.addEventListener(
             "contextmenu",
-            event =>
-                event.preventDefault()
+            event => {
+
+                event.preventDefault();
+
+            }
         );
 
 
         document.addEventListener(
             "dragstart",
-            event =>
-                event.preventDefault()
+            event => {
+
+                event.preventDefault();
+
+            }
         );
 
+
+        /*
+         * NÃO existe mais keydown.
+         *
+         * Portanto:
+         *
+         * ArrowLeft
+         * ArrowRight
+         * MediaTrackNext
+         * MediaTrackPrevious
+         *
+         * não controlam mais o painel.
+         */
 
     </script>
 
